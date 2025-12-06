@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    /* 1. Cấu hình đường dẫn (Quan trọng để Build) */
+    "rootDir": "./src", /* Code nguồn ở đây */
+    "outDir": "./dist", /* Build xong vứt vào đây */
+    /* 2. Môi trường chạy */
+    "target": "es2020",
+    "module": "commonjs", /* Chuẩn module Node.js truyền thống (có __dirname) */
+    /* 3. Tương thích thư viện */
+    "esModuleInterop": true, /* Giúp import express kiểu 'import express from...' không bị lỗi */
+    "skipLibCheck": true, /* Bỏ qua check type trong node_modules (cho đỡ nặng) */
+    "forceConsistentCasingInFileNames": true,
+    /* 4. Strict Mode (Code cho sạch) */
+    "strict": true,
+    "noImplicitAny": true, /* Không cho phép biến kiểu 'any' lung tung */
+    /* 5. Khác */
+    "resolveJsonModule": true, /* Cho phép import file .json nếu cần */
+    "removeComments": true /* Build ra file sạch, không còn comment */
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
