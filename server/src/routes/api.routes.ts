@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { generateController } from "../controllers/genController";
+import { generateLecture } from "../controllers/lecture.controller";
 
 const router = Router();
 
-router.post("/generate", generateController);
+router.post("/generate", generateLecture);
 
 export default router;

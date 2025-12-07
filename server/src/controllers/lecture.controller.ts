@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { genLectureContent } from "../services/ai.service";
 import { generatePDF } from "../services/pdf.service";
 
-export const generateController = async (
+export const generateLecture = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
