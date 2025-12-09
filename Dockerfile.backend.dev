@@ -1,0 +1,43 @@
+FROM node:20-bookworm-slim
+
+# Install dependencies for Puppeteer and native modules
+RUN apt-get update && apt-get install -y \
+    tzdata \
+    wget \
+    gnupg \
+    ca-certificates \
+    fonts-liberation \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libdrm2 \
+    libxkbcommon0 \
+    libgbm1 \
+    libasound2 \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set timezone
+ENV TZ=Asia/Ho_Chi_Minh
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Expose ports (5000 for app, 9229 for debugging)
+EXPOSE 5000 9229
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:5000/health || exit 1
+
+# Start with hot reload
+CMD ["npm", "run", "dev"]
