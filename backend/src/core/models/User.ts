@@ -1,12 +1,13 @@
 import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '../config/database';
+import { UserRole, isVipOrAdmin, isFreeUser, isFutureDate, QUOTA } from '../../shared/constants';
 
 // User attributes
 export interface UserAttributes {
   id: string;
   email: string;
   passwordHash: string;
-  role: 'FREE' | 'VIP' | 'ADMIN';
+  role: UserRole;
   slidesGenerated: number;
   maxSlidesPerMonth: number;
   subscriptionExpiresAt: Date | null;
@@ -23,7 +24,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public id!: string;
   public email!: string;
   public passwordHash!: string;
-  public role!: 'FREE' | 'VIP' | 'ADMIN';
+  public role!: UserRole;
   public slidesGenerated!: number;
   public maxSlidesPerMonth!: number;
   public subscriptionExpiresAt!: Date | null;
@@ -32,7 +33,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
 
   // Helper method to check if user can generate slides
   public canGenerateSlides(): boolean {
-    if (this.role === 'VIP' || this.role === 'ADMIN') {
+    if (isVipOrAdmin(this.role)) {
       return true;
     }
     return this.slidesGenerated < this.maxSlidesPerMonth;
@@ -40,9 +41,8 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
 
   // Helper method to check if subscription is active
   public isSubscriptionActive(): boolean {
-    if (this.role === 'FREE') return false;
-    if (!this.subscriptionExpiresAt) return false;
-    return new Date() < this.subscriptionExpiresAt;
+    if (isFreeUser(this.role)) return false;
+    return isFutureDate(this.subscriptionExpiresAt);
   }
 }
 
@@ -66,9 +66,9 @@ User.init(
       allowNull: false,
     },
     role: {
-      type: DataTypes.ENUM('FREE', 'VIP', 'ADMIN'),
+      type: DataTypes.ENUM(UserRole.FREE, UserRole.VIP, UserRole.ADMIN),
       allowNull: false,
-      defaultValue: 'FREE',
+      defaultValue: UserRole.FREE,
     },
     slidesGenerated: {
       type: DataTypes.INTEGER,
@@ -78,7 +78,7 @@ User.init(
     maxSlidesPerMonth: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 5, // FREE users get 5 slides/month
+      defaultValue: QUOTA.DEFAULT_MAX_SLIDES,
     },
     subscriptionExpiresAt: {
       type: DataTypes.DATE,

@@ -1,5 +1,6 @@
 import User, { UserCreationAttributes, UserAttributes } from '../models/User';
 import { Op } from 'sequelize';
+import { UserRole } from '../../shared/constants';
 
 class UserRepository {
   // Create new user
@@ -28,7 +29,7 @@ class UserRepository {
   }
 
   // Find users by role
-  async findByRole(role: 'FREE' | 'VIP' | 'ADMIN'): Promise<User[]> {
+  async findByRole(role: UserRole): Promise<User[]> {
     return await User.findAll({
       where: { role },
       order: [['createdAt', 'DESC']],
@@ -79,9 +80,9 @@ class UserRepository {
     admin: number;
   }> {
     const total = await User.count();
-    const free = await User.count({ where: { role: 'FREE' } });
-    const vip = await User.count({ where: { role: 'VIP' } });
-    const admin = await User.count({ where: { role: 'ADMIN' } });
+    const free = await User.count({ where: { role: UserRole.FREE } });
+    const vip = await User.count({ where: { role: UserRole.VIP } });
+    const admin = await User.count({ where: { role: UserRole.ADMIN } });
 
     return { total, free, vip, admin };
   }

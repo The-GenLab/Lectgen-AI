@@ -1,6 +1,7 @@
 import Message, { MessageCreationAttributes, MessageAttributes } from '../models/Message';
 import Conversation from '../models/Conversation';
 import { Op } from 'sequelize';
+import { MessageRole, MessageType } from '../../shared/constants';
 
 class MessageRepository {
   // Create new message
@@ -52,7 +53,7 @@ class MessageRepository {
   // Find user messages (USER role only)
   async findUserMessages(conversationId: string): Promise<Message[]> {
     return await Message.findAll({
-      where: { conversationId, role: 'USER' },
+      where: { conversationId, role: MessageRole.USER },
       order: [['createdAt', 'ASC']],
     });
   }
@@ -60,7 +61,7 @@ class MessageRepository {
   // Find assistant messages (ASSISTANT role only)
   async findAssistantMessages(conversationId: string): Promise<Message[]> {
     return await Message.findAll({
-      where: { conversationId, role: 'ASSISTANT' },
+      where: { conversationId, role: MessageRole.ASSISTANT },
       order: [['createdAt', 'ASC']],
     });
   }

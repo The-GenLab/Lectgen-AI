@@ -1,13 +1,14 @@
 import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '../config/database';
 import Conversation from './Conversation';
+import { MessageRole, MessageType } from '../../shared/constants';
 
 // Message attributes
 export interface MessageAttributes {
   id: string;
   conversationId: string;
-  role: 'USER' | 'ASSISTANT';
-  messageType: 'TEXT' | 'AUDIO' | 'IMAGE';
+  role: MessageRole;
+  messageType: MessageType;
   contentText: string | null;
   audioUrl: string | null;
   imageUrl: string | null;
@@ -29,8 +30,8 @@ export interface MessageCreationAttributes
 class Message extends Model<MessageAttributes, MessageCreationAttributes> implements MessageAttributes {
   public id!: string;
   public conversationId!: string;
-  public role!: 'USER' | 'ASSISTANT';
-  public messageType!: 'TEXT' | 'AUDIO' | 'IMAGE';
+  public role!: MessageRole;
+  public messageType!: MessageType;
   public contentText!: string | null;
   public audioUrl!: string | null;
   public imageUrl!: string | null;
@@ -58,11 +59,11 @@ Message.init(
       onDelete: 'CASCADE',
     },
     role: {
-      type: DataTypes.ENUM('USER', 'ASSISTANT'),
+      type: DataTypes.ENUM(MessageRole.USER, MessageRole.ASSISTANT),
       allowNull: false,
     },
     messageType: {
-      type: DataTypes.ENUM('TEXT', 'AUDIO', 'IMAGE'),
+      type: DataTypes.ENUM(MessageType.TEXT, MessageType.AUDIO, MessageType.IMAGE),
       allowNull: false,
     },
     contentText: {
