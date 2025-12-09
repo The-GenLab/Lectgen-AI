@@ -1,679 +1,311 @@
 # 📋 PHÂN CHIA CÔNG VIỆC DỰ ÁN LECTGEN-AI
 
-**Timeline:** 2 tháng (8 tuần) | **Team:** 5 Developers | **Start:** 9/12/2024
+**Timeline:** 2 tháng (8 tuần) | **Team:** 5 Developers Fullstack | **Start:** 9/12/2024
 
 ---
 
-## 👥 TEAM
+## 👥 TEAM SETUP
 
-| Dev | Vai trò | Module chính |
-|-----|---------|--------------|
-| **Bình** | Backend Lead | Auth, Database, Admin Backend |
-| **An** | AI Lead | Gemini, Speech-to-Text, Vision, PDF |
-| **Thiện** | Frontend Lead | Chat UI, Routing, VIP Features |
-| **Dũng** | Fullstack | Auth UI, Upload Components, Admin Frontend |
-| **Mai Anh** | DevOps | Docker, MinIO, Redis, BullMQ, Testing (KHÔNG LÀM AI) |
+| Dev | Tỉ lệ công việc | Ghi chú |
+|-----|----------------|---------|
+| **Bình** | 40% BE + 40% FE + 20% AI | Auth, Database, Chat UI |
+| **An** | 30% BE + 30% FE + 40% AI | **AI Lead** - Gemini, Speech, Vision, PDF |
+| **Thiện** | 40% BE + 40% FE + 20% AI | Chat features, VIP system, APIs |
+| **Dũng** | 40% BE + 40% FE + 20% AI | Upload, Storage, Admin dashboard |
+| **Mai Anh** | 40% BE + 40% FE + 20% DevOps | Docker, Testing, Deployment |
+
+**Nguyên tắc:** Mọi người đều làm fullstack, ai cũng phải code cả backend lẫn frontend. An tập trung AI nhiều nhất.
 
 ---
 
 ## 🗓️ SPRINT 1 (9/12-23/12): FOUNDATION & MVP
 
-**Mục tiêu:** Register → Login → Chat text → Nhận PDF
+**Mục tiêu:** Register → Login → Chat text → AI generate → Nhận PDF
 
 ---
 
-### 🔹 BÌNH - Backend Lead
+### 🔹 BÌNH (Auth & Chat UI Lead)
 
-**Module:** Auth & Database
+**Module:** Authentication + Chat Interface
 
-**Tasks Backend (70%):**
+#### **BACKEND (6 ngày):**
 
-1. **Database Setup (9-11/12)**
-   - Config Sequelize + PostgreSQL
+1. **Database Setup (9-11/12)** - 3 ngày
+   - Setup Sequelize + PostgreSQL
    - Models: User, Conversation, Message
-   - Migrations + seed data (2 users, 5 conversations)
-   - ✅ DB connection OK, relationships work
+   - Relations: User 1-N Conversations, Conversation 1-N Messages
+   - Migrations + seed data (test users)
+   - ✅ Test: Query users, create conversation OK
 
-2. **JWT Auth (12-14/12)**
-   - Service: register(), login(), verifyToken()
-   - Middleware: authenticate(), requireRole()
-   - Bcrypt hash password, JWT token 7 days
-   - ✅ Register/login work, token verify OK
+2. **Auth Service (12-14/12)** - 3 ngày
+   - `POST /api/auth/register` - bcrypt hash password
+   - `POST /api/auth/login` - JWT token (access 7d, refresh 30d)
+   - `POST /api/auth/logout` - blacklist token
+   - `GET /api/auth/me` - get current user
+   - Middleware: `authenticate()`, `requireRole([ADMIN])`
+   - ✅ Test: Postman login → get token → call /me
 
-3. **Auth Routes (15-16/12)**
-   - POST /api/auth/register, /login, GET /me
-   - Zod validation: email format, password 8+ chars
-   - ✅ API endpoints tested
+#### **FRONTEND (6 ngày):**
 
-**Tasks Frontend (30%):**
+3. **Project Setup (15-16/12)** - 2 ngày
+   - Vite + React + TypeScript + TailwindCSS
+   - Folder structure: `/components`, `/pages`, `/services`, `/hooks`
+   - Axios setup với interceptor (auto attach token)
+   - React Router v6 config
 
-4. **Auth Integration (16-17/12)**
-   - Services: authApi.ts
-   - Update Login.tsx, Register.tsx
-   - Save token → localStorage, redirect /chat
-   - ✅ Login flow work end-to-end
+4. **Auth Pages (17-19/12)** - 3 ngày
+   - `LoginPage.tsx` - form (email, password), submit → save token
+   - `RegisterPage.tsx` - form (email, password, confirmPassword)
+   - Protected route HOC `<ProtectedRoute>`
+   - Context: `AuthContext` (user state, login/logout functions)
+   - ✅ Test: Register → auto login → redirect to `/chat`
 
-**Phụ thuộc:** Không
+5. **Chat Layout (20-23/12)** - 4 ngày
+   - `ChatPage.tsx` - layout 3 columns:
+     - Left sidebar (20%): New chat button, conversation list (mock data)
+     - Center (60%): Chat messages area
+     - Right (20%): User profile dropdown (avatar, role badge)
+   - Component: `<Sidebar />`, `<ChatArea />`, `<InputPanel />`
+   - Responsive: mobile collapse sidebar
+   - ✅ Test: UI hiển thị đúng layout
 
----
+#### **PHỤ THUỘC:**
+- Task 3,4,5 chờ Task 2 (API /auth/*)
+- Task 5 cần **Thiện** (Task 11) làm API `/api/conversations`
 
-### 🔹 AN - AI Lead
+#### **AI (2 ngày):**
 
-**Module:** AI Services & PDF
-
-**Tasks Backend (85%):**
-
-1. **Gemini API (9-12/12)**
-   - Service: generateSlideContent()
-   - FREE: gemini-1.5-flash, VIP: gemini-2.0-flash-exp
-   - Prompt template → JSON slides
-   - ✅ Return valid JSON, retry 3x if rate limit
-
-2. **Puppeteer PDF (13-16/12)**
-   - Templates: basic.ejs (FREE), premium.ejs (VIP)
-   - Service: renderPDF(slideData, template)
-   - Puppeteer A4, printBackground: true
-   - ✅ PDF < 30s cho 10 slides, no memory leaks
-
-3. **Generate Endpoint (17-18/12)**
-   - POST /api/generate (text only)
-   - Middleware: authenticate()
-   - Flow: Check conversation → Gemini → PDF → Save Message
-   - ✅ Return messageId + pdfUrl
-
-**Tasks Frontend (15%):**
-
-4. **Message Display (19-20/12)**
-   - Component: MessageItem.tsx
-   - Show PDF icon + Download button
-   - ✅ Download PDF work
-
-**Phụ thuộc:** Task 3 cần Bình Task 2 (auth middleware)
+6. **AI Prompt Templates (21-23/12)** - 2 ngày
+   - File `prompts.ts` - Define system prompts for Gemini
+   - Template: "Generate {n} slides about {topic} with structure..."
+   - Helper: `buildPrompt(userInput, templateStyle)`
+   - ✅ Test: Pass to An's AI service
 
 ---
 
-### 🔹 THIỆN - Frontend Lead
+### 🔹 AN (AI Lead)
 
-**Module:** Chat UI & Routing
+**Module:** AI Services (Gemini, Speech, Vision, PDF)
 
-**Tasks Frontend (80%):**
+#### **AI/BACKEND (10 ngày):**
 
-1. **Project Setup (9/12)**
-   - Verify dependencies: React, TailwindCSS, Zustand, Axios
-   - Setup ESLint + Prettier
-   - ✅ npm run dev OK, hot reload work
+1. **Gemini Text Service (9-12/12)** - 4 ngày
+   - Setup `@google/generative-ai` SDK
+   - Service: `generateSlides(prompt: string)` → JSON structure
+   - Model: `gemini-1.5-flash`
+   - JSON schema: `{ slides: [{ title, content[], layout }] }`
+   - Error handling: retry 3 times, timeout 30s
+   - ✅ Test: Input "Bài giảng AI" → Output JSON 5 slides
 
-2. **Layout (10-12/12)**
-   - MainLayout: Grid [280px sidebar, 1fr chat]
-   - Sidebar: Logo, New Chat button, conversation list
-   - ChatArea: Empty state + message list
-   - InputPanel: 3 tabs (Text active, Audio/Image disabled)
-   - ✅ Responsive layout
+2. **PDF Generation Service (13-16/12)** - 4 ngày
+   - Setup Puppeteer
+   - HTML template: `basic-template.html` (FREE tier)
+   - Function: `renderPDF(slideData: JSON)` → Buffer
+   - Inject data vào template, convert to PDF
+   - ✅ Test: Input JSON → Output PDF file
 
-3. **Routing (13-14/12)**
-   - React Router: /login, /register, /chat, /chat/:id
-   - ProtectedRoute: Check token → redirect if not logged in
-   - ✅ Protected routes work
+3. **API Generate Endpoint (17-19/12)** - 3 ngày
+   - `POST /api/generate` - body: `{ conversationId, message }`
+   - Flow:
+     1. Call Gemini (Task 1)
+     2. Generate PDF (Task 2)
+     3. Save to temp folder
+     4. Return: `{ pdfUrl, slideCount, messageId }`
+   - ✅ Test: Postman call → nhận PDF URL
 
-4. **State Management (15-16/12)**
-   - Stores: authStore.ts, chatStore.ts
-   - Persist auth to localStorage
-   - ✅ State persist after refresh
+#### **FRONTEND (2 ngày):**
 
-**Tasks Backend (20%):**
+4. **AI Loading States (20-21/12)** - 2 ngày
+   - Component: `<GeneratingLoader />` - spinner + text "AI đang tạo slide..."
+   - Progress bar (fake): 0% → 50% (Gemini) → 100% (PDF done)
+   - ✅ Test: Show khi call API generate
 
-5. **Conversation API (17-18/12)**
-   - GET /api/conversations (list)
-   - POST /api/conversations (create)
-   - GET /api/conversations/:id/messages
-   - ✅ API work
-
-**Phụ thuộc:** Task 3 cần Bình Task 2 (auth)
-
----
-
-### 🔹 DŨNG - Fullstack
-
-**Module:** Auth UI & Validation
-
-**Tasks Frontend (60%):**
-
-1. **Login Page (9-11/12)**
-   - Card layout: Logo + Form (email, password)
-   - React Hook Form validation
-   - Submit → authApi.login() → redirect /chat
-   - ✅ Form validation + loading state
-
-2. **Register Page (12-14/12)**
-   - Form: email, password, confirm password
-   - Password strength indicator (weak/medium/strong)
-   - TOS checkbox required
-   - ✅ Register → auto login
-
-**Tasks Backend (40%):**
-
-3. **Validation Middleware (15-17/12)**
-   - Zod schemas: registerSchema, loginSchema, generateSchema
-   - Middleware: validateBody(schema)
-   - ✅ Return 400 with clear errors
-
-4. **Error Handling (18-19/12)**
-   - Global error handler
-   - Custom error classes: UnauthorizedError, NotFoundError, etc.
-   - Winston logger
-   - ✅ Errors logged, no stack trace in prod
-
-**Phụ thuộc:** Task 1-2 cần Bình Task 3 (auth API)
+#### **PHỤ THUỘC:**
+- Task 3 cần **Dũng** (Task 16) cung cấp upload PDF lên MinIO
+- Task 3 cần **Bình** (Task 2) có JWT middleware
 
 ---
 
-### 🔹 MAI ANH - DevOps
+### 🔹 THIỆN (Chat Features & VIP System)
 
-**Module:** Infrastructure (KHÔNG LÀM AI)
+**Module:** Chat Logic + Message Display + VIP
 
-**Tasks (100%):**
+#### **BACKEND (6 ngày):**
 
-1. **Docker Setup (9-10/12)**
-   - docker-compose.dev.yml: postgres, pgadmin, backend, frontend
-   - Dockerfile.dev cho backend + frontend
-   - Hot reload volumes
-   - ✅ docker compose up work
+1. **Conversation API (9-11/12)** - 3 ngày
+   - `GET /api/conversations` - list user's conversations
+   - `POST /api/conversations` - create new chat
+   - `GET /api/conversations/:id` - get messages
+   - `DELETE /api/conversations/:id`
+   - ✅ Test: Create conversation, fetch messages
 
-2. **Environment (11-12/12)**
-   - .env files: backend (DB_URL, JWT_SECRET, GEMINI_KEY), frontend (API_URL)
-   - Validation script: check required vars
-   - ✅ Env vars loaded
+2. **Message API (12-14/12)** - 3 ngày
+   - `POST /api/messages` - save user message
+   - `GET /api/messages/:conversationId` - pagination
+   - Update: `pdfUrl`, `slideCount` after AI done
+   - ✅ Test: Send message → save DB → fetch back
 
-3. **Migrations (13-15/12)**
-   - Sequelize migrations: users, conversations, messages
-   - Seeders: 3 demo users (FREE, VIP, ADMIN), conversations, messages
-   - Commands: db:migrate, db:seed, db:reset
-   - ✅ Seed data OK
+#### **FRONTEND (6 ngày):**
 
-4. **Documentation (16-17/12)**
-   - README.md: Quick start guide
-   - CONTRIBUTING.md: Git workflow
-   - TROUBLESHOOTING.md: Common issues
-   - ✅ Setup < 10 mins
+3. **Chat Messages Display (15-17/12)** - 3 ngày
+   - Component: `<MessageBubble />` - user/assistant styles
+   - Show: text, timestamp
+   - Assistant message: thumbnail preview (mock), Download button
+   - Auto scroll to bottom
+   - ✅ Test: Send message → appear in chat
 
-5. **API Testing (18-19/12)**
-   - Postman collection: Auth, Conversations, Generate
-   - Environment: baseUrl, token auto-set
-   - Test assertions: status codes, schemas
-   - ✅ All endpoints pass
+4. **Input Panel - Text Tab (18-19/12)** - 2 ngày
+   - Component: `<TextInput />` - textarea, send button
+   - Handle: Enter to send, Shift+Enter new line
+   - Call API: `/api/generate` with message
+   - ✅ Test: Type text → click send → loading → PDF appears
 
-**Phụ thuộc:** Task 3 cần Bình Task 1, Task 5 cần Bình + An APIs
+5. **Conversation Sidebar (20-21/12)** - 2 ngày
+   - Component: `<ConversationList />` - fetch `/api/conversations`
+   - Group by date (Today, Yesterday, Last 7 days)
+   - Click → load messages
+   - New Chat button → create new conversation
+   - ✅ Test: Click conversation → switch chat
 
----
+#### **AI (2 ngày):**
 
-## 📊 SPRINT 1 DELIVERABLES (23/12)
+6. **Prompt Suggestions (22-23/12)** - 2 ngày
+   - Dropdown: 5 gợi ý prompt mẫu
+   - "Bài giảng về Machine Learning cơ bản"
+   - "Giới thiệu lịch sử Việt Nam"
+   - Click → fill vào textarea
+   - ✅ Test: Click suggestion → auto fill
 
-✅ Backend: Auth system, DB, /api/generate (text)
-✅ Frontend: Login/Register, Chat UI, Protected routes
-✅ DevOps: Docker, migrations, API tests
-✅ Demo: Register → Login → Generate slides → Download PDF
-
----
-
-## 🗓️ SPRINT 2 (24/12-6/1): MULTI-INPUT & STORAGE
-
-**Mục tiêu:** Audio + Image + MinIO
-
----
-
-### 🔹 BÌNH - MinIO & Upload
-
-**Tasks Backend (100%):**
-
-1. **MinIO Setup (24-26/12)**
-   - docker-compose: minio service
-   - 4 buckets: audio-recordings, template-images, generated-pdfs, user-avatars
-   - ✅ MinIO accessible localhost:9001
-
-2. **Storage Service (27-29/12)**
-   - uploadFile(), generatePresignedUrl(), deleteFile()
-   - Validate file size/type
-   - ✅ Upload to MinIO OK
-
-3. **Upload Endpoints (30/12-1/1)**
-   - POST /api/upload/audio (max 10MB, webm/mp3/wav)
-   - POST /api/upload/image (max 5MB, jpeg/png)
-   - Multer memory storage
-   - ✅ Return MinIO URLs
-
-**Phụ thuộc:** Không
+#### **PHỤ THUỘC:**
+- Task 3,4,5 cần **An** (Task 3) có API `/api/generate`
+- Task 5 cần **Bình** (Task 1) có DB conversations
 
 ---
 
-### 🔹 AN - Speech & Vision
+### 🔹 DŨNG (Upload & Storage & Admin)
 
-**Tasks Backend (100%):**
+**Module:** File Upload + MinIO + Admin Dashboard
 
-1. **Speech-to-Text (24-27/12)**
-   - Google Speech-to-Text API
-   - Service: transcribeAudio(audioUrl)
-   - Config: vi-VN, punctuation: true
-   - ✅ Vietnamese audio → correct transcript
+#### **BACKEND (6 ngày):**
 
-2. **Gemini Vision (28-30/12)**
-   - Service: analyzeSlideStyle(imageUrl)
-   - Extract: color scheme, layout, font, mood
-   - ✅ Return JSON style analysis
+1. **MinIO Setup (9-10/12)** - 2 ngày
+   - Docker MinIO service
+   - Create buckets: `generated-pdfs`, `audio-recordings`, `template-images`
+   - Service: `uploadFile(bucket, file)` → presigned URL
+   - ✅ Test: Upload file → get public URL
 
-3. **Audio/Template Endpoints (31/12-2/1)**
-   - POST /api/generate/audio: Audio → transcript → slides
-   - POST /api/generate/with-template: Image → style → styled slides
-   - ✅ Both flows work
+2. **Upload Middleware (11-12/12)** - 2 ngày
+   - Multer config: max 10MB
+   - `POST /api/upload/pdf` - temp upload
+   - `POST /api/upload/audio` - for Sprint 2
+   - ✅ Test: Postman upload file → MinIO URL
 
-**Phụ thuộc:** Task 3 cần Bình Task 2 (storage)
+3. **Admin User API (13-15/12)** - 3 ngày
+   - `GET /api/admin/users` - list all users (pagination)
+   - `PUT /api/admin/users/:id/role` - change role (FREE/VIP/ADMIN)
+   - `PUT /api/admin/users/:id/quota` - reset slides_generated
+   - Middleware: `requireRole([ADMIN])`
+   - ✅ Test: Admin token → change user role
 
----
+#### **FRONTEND (6 ngày):**
 
-### 🔹 THIỆN - Audio & Chat History
+4. **Download PDF Button (16-17/12)** - 2 ngày
+   - Component: `<DownloadButton pdfUrl={url} />`
+   - Click → fetch file → trigger download
+   - Show: file size, download icon
+   - ✅ Test: Click → download PDF
 
-**Tasks Frontend (90%):**
+5. **Admin Login (18-19/12)** - 2 ngày
+   - Page: `AdminLoginPage.tsx` - separate route `/admin/login`
+   - Check role after login → redirect to `/admin/dashboard`
+   - ✅ Test: Admin login → access dashboard
 
-1. **Audio Recorder (24-27/12)**
-   - Component: AudioRecorder.tsx
-   - Web Audio API: MediaRecorder
-   - Waveform canvas visualization
-   - Max 1 min, auto-stop
-   - ✅ Record + preview + delete work
+6. **Admin Users Table (20-23/12)** - 4 ngày
+   - Page: `AdminUsersPage.tsx`
+   - Table columns: Email, Role, Slides Used, Join Date
+   - Actions: Change Role dropdown, Reset Quota button
+   - Filters: Search email, filter by role
+   - ✅ Test: View users, change role, reset quota
 
-2. **Audio Upload Flow (28-30/12)**
-   - Modal: TranscriptPreviewModal.tsx
-   - Flow: Record → upload → transcribe → preview → edit → generate
-   - Progress bar
-   - ✅ End-to-end flow < 10s
+#### **AI (2 ngày):**
 
-3. **Chat History (31/12-2/1)**
-   - Update Sidebar: Group conversations by date (Today, Yesterday, Last 7 days)
-   - Search bar, infinite scroll
-   - Click conversation → load messages
-   - ✅ Conversations grouped correctly
+7. **PDF Template Styles (21-23/12)** - 2 ngày
+   - CSS styles cho basic template
+   - Color schemes: Blue, Green, Purple
+   - Helper: `applyStyle(template, colorScheme)`
+   - ✅ Test: Generate PDF với màu khác nhau
 
-**Tasks Backend (10%):**
-
-4. **Conversation CRUD (2/1)**
-   - PATCH /api/conversations/:id (rename)
-   - DELETE /api/conversations/:id (soft delete)
-   - ✅ Update/delete work
-
-**Phụ thuộc:** Task 2 cần Bình Task 3 + An Task 1
-
----
-
-### 🔹 DŨNG - Image Upload & Admin
-
-**Tasks Frontend (80%):**
-
-1. **Image Uploader (24-26/12)**
-   - Component: ImageUploader.tsx
-   - Drag & drop + file picker
-   - Preview thumbnail 200x200px
-   - Validate: jpeg/png, max 5MB
-   - ✅ Drag & drop work
-
-2. **Style Analysis UI (27-29/12)**
-   - Modal: StyleAnalysisModal.tsx
-   - Display: color swatches, layout preview, mood text
-   - Confirm button → generate with style
-   - ✅ Style display accurate
-
-3. **Admin Setup (30/12-2/1)**
-   - Next.js app in admin/ folder
-   - Pages: Dashboard, Users Management
-   - Login page với admin role check
-   - ✅ Admin app runs
-
-**Tasks Backend (20%):**
-
-4. **Admin APIs (2/1)**
-   - GET /api/admin/users (list)
-   - GET /api/admin/stats (overview)
-   - Middleware: requireRole(['ADMIN'])
-   - ✅ Admin APIs protected
-
-**Phụ thuộc:** Task 2 cần An Task 2 (vision)
+#### **PHỤ THUỘC:**
+- Task 2 cần **Mai Anh** (Task 1) setup MinIO
+- Task 4 cần **An** (Task 3) return pdfUrl
+- Task 6 cần **Bình** (Task 2) có admin auth
 
 ---
 
-### 🔹 MAI ANH - Redis & Queue
+### 🔹 MAI ANH (DevOps & Integration)
 
-**Tasks (100%):**
+**Module:** Docker, Testing, Deployment
 
-1. **Redis Setup (24-25/12)**
-   - docker-compose: redis service
-   - Test connection
-   - ✅ Redis accessible
+#### **DEVOPS (6 ngày):**
 
-2. **BullMQ Queue (26-28/12)**
-   - Install bullmq
-   - Queue: pdf-generation
-   - Worker: Process PDF jobs
-   - Max 10 concurrent
-   - ✅ Queue work, no memory leaks
+1. **Docker Compose (9-11/12)** - 3 ngày
+   - Services: postgres, minio, backend, frontend
+   - Volumes: persist DB data, MinIO data
+   - Networks: backend-network
+   - Env files: `.env.example`
+   - ✅ Test: `docker-compose up` → all services running
 
-3. **Update PDF Flow (29/12-1/1)**
-   - Generate endpoint → add job to queue
-   - Worker → render PDF → upload MinIO → update Message
-   - ✅ Async PDF generation work
+2. **Environment Setup (12-13/12)** - 2 ngày
+   - `.env` template với comments
+   - Secrets: JWT_SECRET, DATABASE_URL, GEMINI_API_KEY
+   - Document: `SETUP.md` - how to run locally
+   - ✅ Test: Fresh clone → follow guide → app works
 
-4. **Monitoring (2/1)**
-   - Bull Board UI (optional)
-   - Log queue metrics
-   - ✅ Monitor queue performance
+3. **GitHub Repo Structure (14/12)** - 1 ngày
+   - Setup monorepo: `/backend`, `/frontend`, `/admin`
+   - `.gitignore` files
+   - README.md với project overview
+   - ✅ Test: Push code, CI không lỗi
 
-**Phụ thuộc:** Task 3 cần An Task 3 (generate endpoints)
+#### **BACKEND (3 ngày):**
 
----
+4. **Health Check API (15/12)** - 1 ngày
+   - `GET /api/health` - return: DB status, MinIO status
+   - Check connections, return 200 OK
+   - ✅ Test: Call endpoint → all services up
 
-## 📊 SPRINT 2 DELIVERABLES (6/1)
+5. **Error Handler Middleware (16-17/12)** - 2 ngày
+   - Catch all errors → format response
+   - Log errors to console (use Winston)
+   - Return: `{ error: message, statusCode }`
+   - ✅ Test: Trigger error → proper response
 
-✅ Audio: Record → transcribe → generate
-✅ Image: Upload → analyze style → styled slides
-✅ Storage: MinIO for all files
-✅ Queue: BullMQ for PDF generation
-✅ Demo: Full multi-input flow
+#### **FRONTEND (3 ngày):**
 
----
+6. **API Service Layer (18-19/12)** - 2 ngày
+   - File: `api.ts` - axios instance
+   - Interceptor: auto add token header
+   - Interceptor: refresh token if 401
+   - ✅ Test: Call API → token auto attached
 
-## 🗓️ SPRINT 3 (7-20/1): VIP SYSTEM & RATE LIMITING
+7. **Toast Notifications (20/12)** - 1 ngày
+   - Setup `react-toastify`
+   - Success/Error/Info toasts
+   - ✅ Test: Show toast on actions
 
-**Mục tiêu:** Quota system, VIP features, Premium templates
+#### **TESTING (3 ngày):**
 
----
+8. **Backend Unit Tests (21-23/12)** - 3 ngày
+   - Test: Auth service (register, login)
+   - Test: Gemini service (mock API)
+   - Test: PDF service (mock Puppeteer)
+   - Coverage: >60%
+   - ✅ Test: `npm test` all pass
 
-### 🔹 BÌNH - Quota System
-
-**Tasks Backend (100%):**
-
-1. **Quota Middleware (7-9/1)**
-   - Update User model: slidesGenerated, maxSlidesPerMonth
-   - Middleware: checkQuota()
-   - Increment slidesGenerated after generate
-   - ✅ FREE blocked at 5 slides
-
-2. **Monthly Reset (10-11/1)**
-   - Cron job: Reset slidesGenerated đầu tháng
-   - Service: resetMonthlyQuotas()
-   - ✅ Auto-reset work
-
-3. **VIP Endpoints (12-13/1)**
-   - PATCH /api/users/upgrade-to-vip (admin only)
-   - GET /api/users/quota (current usage)
-   - ✅ Quota APIs work
-
-**Phụ thuộc:** Không
+#### **PHỤ THUỘC:**
+- Task 1 phải XONG ĐẦU TIÊN (tất cả dev cần Docker)
+- Task 8 cần code của **Bình** (Auth) và **An** (AI)
 
 ---
 
-### 🔹 AN - Premium Features
-
-**Tasks Backend (100%):**
-
-1. **Premium Templates (7-10/1)**
-   - Create premium-v2.ejs: Gradients, icons, charts
-   - Update renderPDF(): VIP → premium-v2
-   - ✅ Premium template better quality
-
-2. **Better Prompts (11-13/1)**
-   - VIP prompt: More detailed, structured
-   - Add examples in prompt
-   - ✅ VIP slides higher quality
-
-3. **Priority Queue (14-16/1)**
-   - BullMQ: VIP jobs priority 1, FREE priority 5
-   - ✅ VIP generate faster
-
-**Phụ thuộc:** Task 3 cần Mai Anh Sprint 2 Task 2 (BullMQ)
-
----
-
-### 🔹 THIỆN - VIP UI
-
-**Tasks Frontend (100%):**
-
-1. **Usage Display (7-9/1)**
-   - Sidebar: Show "3/5 slides used" (FREE), "∞ Unlimited" (VIP)
-   - Badge: FREE (gray), VIP (gold)
-   - ✅ Quota display accurate
-
-2. **Upgrade Prompt (10-12/1)**
-   - Modal: QuotaExceededModal.tsx
-   - Show when FREE user hits limit
-   - Button: "Upgrade to VIP"
-   - ✅ Block UI when quota exceeded
-
-3. **Pricing Page (13-16/1)**
-   - Page: Pricing.tsx
-   - Feature comparison table: FREE vs VIP
-   - ✅ Responsive design
-
-**Phụ thuộc:** Task 1 cần Bình Task 1 (quota)
-
----
-
-### 🔹 DŨNG - Admin Dashboard
-
-**Tasks Frontend (70%):**
-
-1. **Dashboard Overview (7-10/1)**
-   - Cards: Total users, Slides generated, Storage used
-   - Charts: User growth (Recharts)
-   - ✅ Dashboard stats accurate
-
-2. **Users Management (11-14/1)**
-   - Table: Email, Role, Slides used, Join date
-   - Actions: View, Change role, Reset quota, Delete
-   - ✅ CRUD users work
-
-**Tasks Backend (30%):**
-
-3. **Admin Analytics (15-16/1)**
-   - GET /api/admin/stats: User count, slide count
-   - GET /api/admin/chats: All conversations
-   - ✅ Analytics APIs work
-
-**Phụ thuộc:** Task 1-2 cần Bình Sprint 3 Task 3 (VIP endpoints)
-
----
-
-### 🔹 MAI ANH - Caching & Performance
-
-**Tasks (100%):**
-
-1. **Redis Caching (7-9/1)**
-   - Cache popular prompts
-   - Cache user quota
-   - TTL: 1 hour
-   - ✅ Cache hit rate > 50%
-
-2. **Performance Testing (10-13/1)**
-   - k6 load test: 100 concurrent users
-   - Monitor: Response time, memory
-   - ✅ No crashes, < 500ms avg response
-
-3. **Monitoring Setup (14-16/1)**
-   - Log aggregation (optional: ELK stack)
-   - Health check endpoint: /health
-   - ✅ Monitoring dashboard
-
-**Phụ thuộc:** Không
-
----
-
-## 📊 SPRINT 3 DELIVERABLES (20/1)
-
-✅ Quota: FREE 5 slides/month, VIP unlimited
-✅ Premium: Better templates + prompts for VIP
-✅ Admin: Dashboard + Users management
-✅ Performance: Caching + load tested
-✅ Demo: FREE blocked → VIP upgrade → unlimited
-
----
-
-## 🗓️ SPRINT 4 (21/1-3/2): POLISH & DEPLOYMENT
-
-**Mục tiêu:** Bug fixes, Testing, Deploy ready
-
----
-
-### 🔹 BÌNH - Admin APIs & Bug Fixes
-
-**Tasks (100%):**
-
-1. **Complete Admin APIs (21-23/1)**
-   - POST /api/admin/users/:id/change-role
-   - POST /api/admin/users/:id/reset-quota
-   - DELETE /api/admin/users/:id
-   - ✅ All admin APIs done
-
-2. **Bug Fixes (24-27/1)**
-   - Fix reported bugs từ Sprint 1-3
-   - Security audit: SQL injection, XSS
-   - ✅ No critical bugs
-
-3. **Performance Optimization (28-30/1)**
-   - Optimize DB queries (add indexes)
-   - Connection pooling tuning
-   - ✅ Query time < 50ms
-
-**Phụ thuộc:** Không
-
----
-
-### 🔹 AN - AI Optimization & Testing
-
-**Tasks (100%):**
-
-1. **AI Error Handling (21-24/1)**
-   - Better error messages
-   - Retry logic for all AI services
-   - Fallback templates if PDF fail
-   - ✅ Robust error handling
-
-2. **AI Testing (25-27/1)**
-   - Unit tests: gemini.service, speech.service, vision.service
-   - Mock API responses
-   - ✅ Test coverage > 80%
-
-3. **Documentation (28-30/1)**
-   - AI_SERVICES.md: How to use each service
-   - Prompt examples
-   - ✅ Developer docs complete
-
-**Phụ thuộc:** Không
-
----
-
-### 🔹 THIỆN - UI Polish
-
-**Tasks (100%):**
-
-1. **Responsive Design (21-24/1)**
-   - Mobile breakpoints: < 768px
-   - Sidebar collapse on mobile
-   - Touch-friendly buttons
-   - ✅ Mobile usable
-
-2. **Dark Mode (25-27/1)**
-   - TailwindCSS dark: classes
-   - Toggle button in settings
-   - ✅ Dark mode work
-
-3. **Accessibility (28-30/1)**
-   - ARIA labels
-   - Keyboard navigation
-   - Screen reader tested
-   - ✅ WCAG 2.1 AA compliant
-
-**Phụ thuộc:** Không
-
----
-
-### 🔹 DŨNG - Admin Polish & E2E Tests
-
-**Tasks (100%):**
-
-1. **Admin UI Polish (21-24/1)**
-   - Loading states
-   - Error boundaries
-   - Toast notifications
-   - ✅ Admin UX smooth
-
-2. **E2E Tests (25-28/1)**
-   - Playwright: Auth flow, Generate flow, Admin flow
-   - ✅ All critical paths tested
-
-3. **User Documentation (29-30/1)**
-   - USER_GUIDE.md: How to use app
-   - Screenshots + GIFs
-   - ✅ User docs complete
-
-**Phụ thuộc:** Không
-
----
-
-### 🔹 MAI ANH - Deployment
-
-**Tasks (100%):**
-
-1. **Production Docker (21-23/1)**
-   - docker-compose.prod.yml
-   - Multi-stage builds
-   - Nginx reverse proxy
-   - ✅ Production containers ready
-
-2. **CI/CD Pipeline (24-27/1)**
-   - GitHub Actions: Build → Test → Deploy
-   - Auto-deploy on push to main
-   - ✅ CI/CD work
-
-3. **Deployment Guide (28-30/1)**
-   - DEPLOYMENT.md: Step-by-step
-   - Environment setup
-   - Backup strategy
-   - ✅ Deployment documented
-
-4. **Final Testing (31/1-3/2)**
-   - Smoke tests on production
-   - Security scan
-   - ✅ Production ready
-
-**Phụ thuộc:** Tất cả features done từ Sprint 1-3
-
----
-
-## 📊 SPRINT 4 DELIVERABLES (3/2)
-
-✅ Polish: Responsive, Dark mode, Accessibility
-✅ Testing: Unit tests, E2E tests, Load tested
-✅ Deployment: Docker, CI/CD, Production ready
-✅ Documentation: User guide, Developer docs, Deployment guide
-✅ Demo: Full product ready to deploy
-
----
-
-## 🎯 FINAL CHECKLIST
-
-- [ ] All features từ MVP done
-- [ ] No critical bugs
-- [ ] Test coverage > 70%
-- [ ] Documentation complete
-- [ ] Production deployment successful
-- [ ] Handover meeting done
-
----
-
-## 💡 TIPS THÀNH CÔNG
-
-1. **Daily Standup (15 min):** What I did, what I'll do, blockers
-2. **Sprint Review:** Demo working features
-3. **Code Review:** Every PR needs 1 approval
-4. **Focus:** Không làm ngoài scope
-5. **Communication:** Slack/Discord active
-
----
-
-**Good luck team! 🚀 Ship fast, iterate later!**
+## 📊 SPRINT 1 DEPENDENCIES MAP
