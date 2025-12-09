@@ -8,13 +8,11 @@
 
 | Dev | Tỉ lệ công việc | Ghi chú |
 |-----|----------------|---------|
-| **Bình** | 40% BE + 40% FE + 20% AI | Auth, Database, Chat UI |
-| **An** | 30% BE + 30% FE + 40% AI | **AI Lead** - Gemini, Speech, Vision, PDF |
-| **Thiện** | 40% BE + 40% FE + 20% AI | Chat features, VIP system, APIs |
-| **Dũng** | 40% BE + 40% FE + 20% AI | Upload, Storage, Admin dashboard |
-| **Mai Anh** | 40% BE + 40% FE + 20% DevOps | Docker, Testing, Deployment |
-
-**Nguyên tắc:** Mọi người đều làm fullstack, ai cũng phải code cả backend lẫn frontend. An tập trung AI nhiều nhất.
+| **Bình** | 40% BE + 40% FE + 20% AI | Backend Lead |
+| **An** | 30% BE + 30% FE + 40% AI | **AI Lead** |
+| **Thiện** | 40% BE + 40% FE + 20% AI | Frontend Lead |
+| **Dũng** | 40% BE + 40% FE + 20% AI 
+| **Mai Anh** | 40% BE + 40% FE + 20% DevOps | 
 
 ---
 
