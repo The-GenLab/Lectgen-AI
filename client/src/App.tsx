@@ -1,7 +1,7 @@
 import "./App.css";
 
 function App() {
-  return <>binh bo an gio</>;
+  return <>thien wibu</>;
 }
 
 export default App;
