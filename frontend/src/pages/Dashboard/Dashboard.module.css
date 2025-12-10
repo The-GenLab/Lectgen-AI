@@ -100,6 +100,99 @@
   background-color: #2f2f2f;
 }
 
+.userProfileWrapper {
+  position: relative;
+}
+
+.userMenu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 8px;
+  background-color: #2f2f2f;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  padding: 8px;
+  z-index: 1000;
+  min-width: 280px;
+}
+
+.userMenuHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.userMenuHeader:hover {
+  background-color: #3f3f3f;
+}
+
+.userInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.userDisplayName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ececec;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userEmail {
+  font-size: 12px;
+  color: #8e8e8e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userBadgeMenu {
+  padding: 4px 10px;
+  background-color: #1a1a1a;
+  border-radius: 12px;
+  font-size: 11px;
+  color: #8e8e8e;
+  font-weight: 500;
+}
+
+.userMenuDivider {
+  height: 1px;
+  background-color: #4d4d4d;
+  margin: 8px 0;
+}
+
+.userMenuItem {
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  color: #ececec;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+  text-align: left;
+}
+
+.userMenuItem:hover {
+  background-color: #3f3f3f;
+}
+
+.userMenuItem svg {
+  flex-shrink: 0;
+  color: #8e8e8e;
+}
+
 .avatar {
   width: 32px;
   height: 32px;
