@@ -12,6 +12,14 @@ export const getAuthHeaders = (): HeadersInit => {
   };
 };
 
+// Get auth headers for file upload (without Content-Type)
+export const getAuthHeadersForUpload = (): HeadersInit => {
+  const token = getAuthToken();
+  return {
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
+};
+
 // Check if user is authenticated
 export const isAuthenticated = (): boolean => {
   return !!getAuthToken();

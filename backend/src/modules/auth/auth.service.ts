@@ -59,9 +59,13 @@ class AuthService {
     // Hash password
     const passwordHash = await this.hashPassword(password);
 
+    // Extract name from email (part before @)
+    const name = email.split('@')[0];
+
     // Create user
     const user = await userRepository.create({
       email,
+      name,
       passwordHash,
       role: UserRole.FREE,
       maxSlidesPerMonth: QUOTA.FREE_USER_MAX_SLIDES,

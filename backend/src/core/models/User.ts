@@ -6,6 +6,8 @@ import { UserRole, isVipOrAdmin, isFreeUser, isFutureDate, QUOTA } from '../../s
 export interface UserAttributes {
   id: string;
   email: string;
+  name: string;
+  avatarUrl: string | null;
   passwordHash: string;
   role: UserRole;
   slidesGenerated: number;
@@ -23,6 +25,8 @@ export interface UserCreationAttributes
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: string;
   public email!: string;
+  public name!: string;
+  public avatarUrl!: string | null;
   public passwordHash!: string;
   public role!: UserRole;
   public slidesGenerated!: number;
@@ -60,6 +64,16 @@ User.init(
       validate: {
         isEmail: true,
       },
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: '',
+    },
+    avatarUrl: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null,
     },
     passwordHash: {
       type: DataTypes.STRING,

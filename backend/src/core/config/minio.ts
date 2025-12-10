@@ -19,6 +19,12 @@ export const BUCKETS = {
   AVATARS: 'user-avatars',
 };
 
+// MinIO configuration
+export const MINIO_CONFIG = {
+  ENDPOINT: `http://${process.env.MINIO_ENDPOINT || 'localhost'}:${process.env.MINIO_PORT || '9000'}`,
+  BUCKETS,
+};
+
 // Initialize buckets
 export const initializeBuckets = async () => {
   try {

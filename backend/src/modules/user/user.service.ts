@@ -8,6 +8,16 @@ class UserService {
     return await userRepository.findById(id);
   }
 
+  // Update user name (for profile editing)
+  async updateUserName(id: string, name: string): Promise<User | null> {
+    return await userRepository.update(id, { name });
+  }
+
+  // Update user avatar
+  async updateUserAvatar(id: string, avatarUrl: string | null): Promise<User | null> {
+    return await userRepository.update(id, { avatarUrl });
+  }
+
   // Update user profile
   async updateUser(id: string, updateData: Partial<{
     email: string;

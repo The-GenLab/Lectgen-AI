@@ -1,13 +1,27 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './Dashboard.module.css';
 import { logout } from '../../utils/auth';
+import { getAvatarUrl } from '../../utils/file';
 
 export default function Dashboard() {
   const [input, setInput] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'));
   const menuRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
+  // Reload user data when returning from profile page
+  useEffect(() => {
+    const handleFocus = () => {
+      const updatedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      setUser(updatedUser);
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+  
   const handleSubmit = () => {
     if (!input.trim()) return;
     // TODO: Send message to backend
@@ -77,29 +91,37 @@ export default function Dashboard() {
               className={styles.userProfile}
               onClick={() => setShowUserMenu(!showUserMenu)}
             >
-              <div className={styles.avatar}>
-                {user.email?.[0]?.toUpperCase() || 'U'}
-              </div>
+              {getAvatarUrl(user.avatarUrl) ? (
+                <img src={getAvatarUrl(user.avatarUrl)!} alt="Avatar" className={styles.avatar} style={{ objectFit: 'cover' }} />
+              ) : (
+                <div className={styles.avatar}>
+                  {(user.name || user.email)?.[0]?.toUpperCase() || 'U'}
+                </div>
+              )}
               <span className={styles.userName}>
-                {user.email?.split('@')[0] || 'User'}
+                {user.name || user.email?.split('@')[0] || 'User'}
               </span>
               <span className={styles.userBadge}>Free</span>
             </button>
 
             {showUserMenu && (
               <div className={styles.userMenu}>
-                <div className={styles.userMenuHeader}>
-                  <div className={styles.avatar}>
-                    {user.email?.[0]?.toUpperCase() || 'U'}
-                  </div>
+                <button className={styles.userMenuHeader} onClick={() => navigate('/profile')}>
+                  {getAvatarUrl(user.avatarUrl) ? (
+                    <img src={getAvatarUrl(user.avatarUrl)!} alt="Avatar" className={styles.avatar} style={{ objectFit: 'cover' }} />
+                  ) : (
+                    <div className={styles.avatar}>
+                      {(user.name || user.email)?.[0]?.toUpperCase() || 'U'}
+                    </div>
+                  )}
                   <div className={styles.userInfo}>
                     <div className={styles.userDisplayName}>
-                      {user.email?.split('@')[0] || 'User'}
+                      {user.name || user.email?.split('@')[0] || 'User'}
                     </div>
                     <div className={styles.userEmail}>{user.email}</div>
                   </div>
                   <span className={styles.userBadgeMenu}>Free</span>
-                </div>
+                </button>
 
                 <div className={styles.userMenuDivider}></div>
 
