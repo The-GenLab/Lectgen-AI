@@ -16,6 +16,27 @@ class UserController {
     }
   }
 
+  // Update current user profile (name only)
+  async updateProfile(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return errorResponse(res, 'Unauthorized', 401);
+      }
+
+      const { name } = req.body;
+
+      if (!name || name.trim().length === 0) {
+        return errorResponse(res, 'Name is required', 400);
+      }
+
+      const updatedUser = await userService.updateUserName(req.user.id, name.trim());
+
+      return successResponse(res, { user: updatedUser }, 'Profile updated successfully');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Failed to update profile', 500);
+    }
+  }
+
   // Get all users (admin only)
   async getAllUsers(req: Request, res: Response) {
     try {

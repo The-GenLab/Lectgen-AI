@@ -6,6 +6,7 @@ import { initializeBuckets } from "./core/config/minio";
 import authRoutes from "./modules/auth/auth.routes";
 import conversationRoutes from "./modules/conversation/conversation.routes";
 import userRoutes from "./modules/user/user.routes";
+import fileRoutes from "./modules/file/file.routes";
 import { errorHandler, notFoundHandler } from "./shared/middleware/error.middleware";
 
 configDotenv();
@@ -22,8 +23,6 @@ app.use(
   }),
 );
 
-app.use(express.json());
-
 // Health check endpoint (for Docker HEALTHCHECK)
 app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({
@@ -32,6 +31,13 @@ app.get("/health", (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// File upload routes MUST come before express.json() to avoid parsing FormData as JSON
+app.use("/api/files", fileRoutes);
+
+// Increase body size limit to 10MB for other routes
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
 app.use("/api/auth", authRoutes);
