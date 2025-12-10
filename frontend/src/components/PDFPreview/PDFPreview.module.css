@@ -1,0 +1,166 @@
+.pdfPreview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f7f7f8;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.pdfPreview:hover {
+  background: #ececec;
+  border-color: #d0d0d0;
+}
+
+.thumbnail {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.pdfIcon {
+  width: 32px;
+  height: 32px;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fileName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2d2d2d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metadata {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #6b6b6b;
+}
+
+.date {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.downloadBtn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #10a37f;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.downloadBtn:hover:not(:disabled) {
+  background: #0d8c6d;
+  transform: translateY(-1px);
+}
+
+.downloadBtn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.downloadBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.downloadBtn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+    stroke-dashoffset: 32;
+  }
+  to {
+    transform: rotate(360deg);
+    stroke-dashoffset: 0;
+  }
+}
+
+.error {
+  position: absolute;
+  bottom: -24px;
+  left: 12px;
+  right: 12px;
+  padding: 4px 8px;
+  background: #ff4444;
+  color: white;
+  font-size: 12px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pdfPreview {
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  .thumbnail {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .pdfIcon {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .fileName {
+    font-size: 13px;
+  }
+  
+  .metadata {
+    font-size: 11px;
+  }
+  
+  .downloadBtn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .downloadBtn svg {
+    width: 18px;
+    height: 18px;
+  }
+}

@@ -16,7 +16,7 @@ services:
     networks:
       - lectgen-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lectgen"]
+      test: [ "CMD-SHELL", "pg_isready -U lectgen -d lectgen_db" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,7 +37,7 @@ services:
       - lectgen-network
     command: server /data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
       interval: 30s
       timeout: 20s
       retries: 3
@@ -53,7 +53,7 @@ services:
     networks:
       - lectgen-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -121,6 +121,7 @@ volumes:
   minio_data:
   redis_data:
   pgadmin_data:
+
 
 networks:
   lectgen-network:
