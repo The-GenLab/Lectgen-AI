@@ -2,6 +2,32 @@ import { Request, Response } from 'express';
 import authService from './auth.service';
 
 class AuthController {
+  // Check if email exists
+  async checkEmail(req: Request, res: Response) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is required',
+        });
+      }
+
+      const exists = await authService.checkEmailExists(email);
+
+      return res.status(200).json({
+        success: true,
+        data: { exists },
+      });
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Check email failed',
+      });
+    }
+  }
+
   // Register new user
   async register(req: Request, res: Response) {
     try {

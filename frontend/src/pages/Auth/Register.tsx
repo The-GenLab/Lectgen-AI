@@ -1,13 +1,17 @@
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import styles from './Login.module.css';
+import { authApi } from '../../api/auth';
 
 export default function Register() {
   const location = useLocation();
+  const navigate = useNavigate();
   const email = location.state?.email || '';
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const isPasswordValid = password.length >= 12;
   const showError = touched && !isPasswordValid;
@@ -16,8 +20,25 @@ export default function Register() {
     setTouched(true);
     if (!isPasswordValid) return;
     
-    // TODO: Call API to register
-    console.log('Register:', { email, password });
+    setLoading(true);
+    setError('');
+    
+    try {
+      const result = await authApi.register({ email, password });
+      
+      // Save token to localStorage
+      localStorage.setItem('token', result.data.token);
+      localStorage.setItem('user', JSON.stringify(result.data.user));
+      
+      // Redirect to dashboard
+      console.log('Registration successful:', result);
+      navigate('/');
+      
+    } catch (err: any) {
+      setError(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -46,6 +67,21 @@ export default function Register() {
             </div>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div style={{ 
+              padding: '12px', 
+              backgroundColor: '#fef2f2', 
+              border: '1px solid #fecaca', 
+              borderRadius: '8px',
+              color: '#991b1b',
+              marginBottom: '16px',
+              fontSize: '14px'
+            }}>
+              {error}
+            </div>
+          )}
+
           {/* Password Input */}
           <div className={styles.passwordField}>
             <label className={styles.label}>Mật khẩu</label>
@@ -56,6 +92,7 @@ export default function Register() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onBlur={() => setTouched(true)}
+                disabled={loading}
               />
               <button
                 type="button"
@@ -93,9 +130,10 @@ export default function Register() {
           <button 
             className={styles.submitButton} 
             onClick={handleSubmit}
-            disabled={!isPasswordValid}
+            disabled={loading}
+            style={{ opacity: loading ? 0.6 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
           >
-            Tiếp tục
+            {loading ? 'Đang xử lý...' : 'Tiếp tục'}
           </button>
 
           {/* Footer Links */}

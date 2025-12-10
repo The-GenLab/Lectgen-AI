@@ -1,33 +1,162 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Login.module.css';
+import { authApi } from '../../api/auth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [step, setStep] = useState<'email' | 'login' | 'register'>('email');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleContinue = async () => {
     if (!email) return;
 
+    setLoading(true);
+    setError('');
+
     try {
-      // TODO: Call API to check if email exists
-      // const response = await fetch(`/api/auth/check-email?email=${email}`);
-      // const data = await response.json();
+      const { exists } = await authApi.checkEmail(email);
       
-      // Giả sử email chưa tồn tại → Navigate to register
-      const emailExists = false; // TODO: Replace with API call
-      
-      if (emailExists) {
-        // TODO: Navigate to login with password page
-        console.log('Email exists, show password input');
+      if (exists) {
+        // Email đã tồn tại → Hiển thị form login
+        setStep('login');
       } else {
-        // Navigate to register page
+        // Email chưa tồn tại → Chuyển sang trang register
         navigate('/register', { state: { email } });
       }
-    } catch (error) {
-      console.error('Error checking email:', error);
+    } catch (err: any) {
+      setError(err.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
     }
   };
+
+  const handleLogin = async () => {
+    if (!password) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const result = await authApi.login({ email, password });
+      
+      // Save token to localStorage
+      localStorage.setItem('token', result.data.token);
+      localStorage.setItem('user', JSON.stringify(result.data.user));
+      
+      // Redirect to dashboard
+      navigate('/');
+    } catch (err: any) {
+      setError(err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Nếu đang ở bước login (nhập password)
+  if (step === 'login') {
+    return (
+      <div className={styles.container}>
+        {/* Left side - Logo */}
+        <div className={styles.leftSection}>
+          <h1 className={styles.logo}>ChatGPT</h1>
+        </div>
+
+        {/* Right side - Form */}
+        <div className={styles.rightSection}>
+          <div className={styles.formWrapper}>
+            <h2 className={styles.title}>Nhập mật khẩu của bạn</h2>
+            
+            {/* Email Display (Read-only) */}
+            <div className={styles.emailDisplay}>
+              <label className={styles.label}>Địa chỉ email</label>
+              <div className={styles.emailReadonly}>
+                {email}
+                <button 
+                  onClick={() => setStep('email')} 
+                  className={styles.editLink}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  Chỉnh sửa
+                </button>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: '#fef2f2', 
+                border: '1px solid #fecaca', 
+                borderRadius: '8px',
+                color: '#991b1b',
+                marginBottom: '16px',
+                fontSize: '14px'
+              }}>
+                {error}
+              </div>
+            )}
+
+            {/* Password Input */}
+            <div className={styles.passwordField}>
+              <label className={styles.label}>Mật khẩu</label>
+              <div className={styles.passwordWrapper}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className={styles.emailInput}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                  disabled={loading}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  className={styles.togglePassword}
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
+                >
+                  {showPassword ? (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  ) : (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Submit button */}
+            <button 
+              className={styles.submitButton} 
+              onClick={handleLogin}
+              disabled={loading || !password}
+              style={{ opacity: loading || !password ? 0.6 : 1 }}
+            >
+              {loading ? 'Đang xử lý...' : 'Tiếp tục'}
+            </button>
+
+            {/* Footer Links */}
+            <div className={styles.footer}>
+              <a href="#" className={styles.footerLink}>Điều khoản sử dụng</a>
+              <span className={styles.separator}>|</span>
+              <a href="#" className={styles.footerLink}>Chính sách riêng tư</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Bước nhập email (mặc định)
 
   return (
     <div className={styles.container}>
@@ -88,6 +217,21 @@ export default function Login() {
             <span>HOẶC</span>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div style={{ 
+              padding: '12px', 
+              backgroundColor: '#fef2f2', 
+              border: '1px solid #fecaca', 
+              borderRadius: '8px',
+              color: '#991b1b',
+              marginBottom: '16px',
+              fontSize: '14px'
+            }}>
+              {error}
+            </div>
+          )}
+
           {/* Email input */}
           <input
             type="email"
@@ -95,11 +239,18 @@ export default function Login() {
             className={styles.emailInput}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleContinue()}
+            disabled={loading}
           />
 
           {/* Submit button */}
-          <button className={styles.submitButton} onClick={handleContinue}>
-            Tiếp tục
+          <button 
+            className={styles.submitButton} 
+            onClick={handleContinue}
+            disabled={loading || !email}
+            style={{ opacity: loading || !email ? 0.6 : 1 }}
+          >
+            {loading ? 'Đang kiểm tra...' : 'Tiếp tục'}
           </button>
 
           {/* Footer Links */}

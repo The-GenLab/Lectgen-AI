@@ -5,6 +5,7 @@ import { authenticate } from '../../shared/middleware/auth.middleware';
 const router = Router();
 
 // Public routes
+router.post('/check-email', authController.checkEmail);
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 

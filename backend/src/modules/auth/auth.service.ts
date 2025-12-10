@@ -35,6 +35,12 @@ class AuthService {
     return await bcrypt.compare(password, hashedPassword);
   }
 
+  // Check if email exists
+  async checkEmailExists(email: string): Promise<boolean> {
+    const user = await userRepository.findByEmail(email);
+    return !!user;
+  }
+
   // Register new user
   async register(data: RegisterData): Promise<{ user: User; token: string }> {
     const { email, password } = data;
@@ -46,8 +52,8 @@ class AuthService {
     }
 
     // Validate password
-    if (password.length < 6) {
-      throw new Error('Password must be at least 6 characters');
+    if (password.length < 12) {
+      throw new Error('Password must be at least 12 characters');
     }
 
     // Hash password
