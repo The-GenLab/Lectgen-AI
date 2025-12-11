@@ -4,6 +4,7 @@ import styles from './Dashboard.module.css';
 import { logout } from '../../utils/auth';
 import PDFPreview from '../../components/PDFPreview';
 import { getUserPDFs } from '../../api/pdf';
+import { getProfile } from '../../api/user';
 import type { PDFDocument } from '../../api/pdf';
 import { getAvatarUrl } from '../../utils/file';
 
@@ -12,9 +13,30 @@ export default function Dashboard() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [pdfs, setPdfs] = useState<PDFDocument[]>([]);
   const [isLoadingPDFs, setIsLoadingPDFs] = useState(false);
-  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'));
+  const [user, setUser] = useState<any>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // Fetch user profile on mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await getProfile();
+        if (response.success) {
+          setUser(response.data.user); // Fix: response.data.user chứ không phải response.data
+        }
+      } catch (error) {
+        console.error('Failed to fetch user:', error);
+        // Redirect to login if unauthorized
+        logout();
+      } finally {
+        setIsLoadingUser(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   // Fetch user's PDFs on mount
   useEffect(() => {
@@ -53,17 +75,6 @@ export default function Dashboard() {
 
     fetchPDFs();
   }, []);
-
-  // Reload user data when returning from profile page
-  useEffect(() => {
-    const handleFocus = () => {
-      const updatedUser = JSON.parse(localStorage.getItem('user') || '{}');
-      setUser(updatedUser);
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
   
   const handleSubmit = () => {
     if (!input.trim()) return;
@@ -91,6 +102,17 @@ export default function Dashboard() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showUserMenu]);
+
+  // Show loading state
+  if (isLoadingUser || !user) {
+    return (
+      <div className={styles.container}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          Loading...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
