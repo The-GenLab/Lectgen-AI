@@ -12,7 +12,6 @@ export default function Dashboard() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [pdfs, setPdfs] = useState<PDFDocument[]>([]);
   const [isLoadingPDFs, setIsLoadingPDFs] = useState(false);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'));
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
