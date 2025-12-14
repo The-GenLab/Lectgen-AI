@@ -1,207 +1,164 @@
 # 📋 PHÂN CÔNG NHIỆM VỤ DỰ ÁN: LectGen-AI
 
----
+## 🧑‍💻 Bình  
+**Fullstack & AI – User App + Admin Content Management**
 
-## 1. 👩‍💻 Mai Anh  
-**Frontend & Backend – Admin Dashboard**
+Bình phụ trách **User App chính** và đảm nhận thêm các màn hình Admin
+liên quan trực tiếp đến **nội dung slide**.
 
-Mai Anh chịu trách nhiệm xây dựng và quản lý **toàn bộ các màn hình Admin Dashboard**, đảm bảo trải nghiệm quản trị viên mượt mà, rõ ràng và chuyên nghiệp.
+### User App – Chat Interface & Speech Service AI
 
-### Admin Dashboard Modules
-
-- **LectGen-AI Dashboard Overview**  
-  - Frontend & Backend  
-  - Hiển thị KPI, biểu đồ dữ liệu thống kê
-
-- **LectGen-AI User List Management**  
-  - Frontend & Backend  
-  - CRUD người dùng
-
-- **LectGen-AI User Details**  
-  - Frontend & Backend  
-  - Hiển thị chi tiết user và các hành động quản trị
-
-- **LectGen-AI Subscriptions & Billing**  
-  - Frontend & Backend  
-  - Quản lý thanh toán, gói VIP và doanh thu
-
-- **LectGen-AI General Settings**  
-  - Frontend & Backend  
-  - Cài đặt hệ thống chung
-
-- **LectGen-AI Slide & Content List**  
-  - Frontend & Backend  
-  - Quản lý danh sách slide đã tạo
-
-- **LectGen-AI AI Models Config**  
-  - Frontend & Backend  
-  - Quản lý cấu hình các model AI
-
-- **LectGen-AI System Logs**  
-  - Frontend & Backend  
-  - Hiển thị và lọc log hệ thống
-
----
-
-## 2. 🧑‍💻 Bình  
-**Fullstack & AI – User App: Chat Interface & Speech Service AI**
-
-Bình phụ trách **giao diện chat chính của User App**, nơi người dùng tương tác với AI, và tích hợp **Speech Service AI**.
-
-### User App – Chat Interface & Audio Input
-
-- **LectGen-AI User App – Chat Interface**  
-  - Frontend:  
-    - Layout chính  
-    - Hiển thị lịch sử hội thoại  
-    - User Prompt  
-    - AI Response Cards  
-  - Backend:  
-    - API xử lý Text Input  
+- **LectGen-AI User App – Chat Interface**
+  - Frontend:
+    - Layout chính
+    - Lịch sử hội thoại
+    - User Prompt
+    - AI Response Cards
+  - Backend:
+    - API xử lý Text Input
     - Gửi request đến Core AI Service
 
-- **AI Response Card UI**  
-  - Frontend:  
-    - Thumbnail  
-    - Download PDF  
-    - Edit Slide  
-    - Metadata
+- **AI Response Card UI**
+  - Thumbnail
+  - Download PDF
+  - Edit Slide
+  - Metadata
 
-- **LectGen-AI User App – Audio Input**  
-  - Frontend:  
-    - UI ghi âm  
-    - Waveform visualization  
-    - Preview transcript  
-  - Backend & AI:  
-    - Tích hợp Speech Service AI (Audio → Text)  
-    - Gửi kết quả đến Core AI Service
+- **LectGen-AI User App – Audio Input**
+  - Frontend:
+    - Ghi âm
+    - Waveform visualization
+    - Preview transcript
+  - Backend & AI:
+    - Speech Service AI (Audio → Text)
 
-- **Input Panel (Text Tab)**  
-  - Frontend:  
-    - Textbox  
-    - Gợi ý prompt  
-  - Backend:  
-    - API gợi ý prompt (nếu có)
+- **Input Panel (Text Tab)**
+  - Textbox
+  - Prompt suggestions
+
+### Admin Dashboard – Content
+
+- **LectGen-AI Slide & Content List**
+  - Quản lý danh sách slide đã tạo
+  - View / delete / re-generate content
 
 ---
 
-## 3. 🧠 An  
-**Backend – Core AI Service (LangChain + Gemini)**
+## 🧠 An  
+**Backend – Core AI Service & Admin AI Configuration**
 
-An chịu trách nhiệm xây dựng **trái tim của hệ thống AI**, tối ưu logic xử lý ngôn ngữ và sinh nội dung slide.
+An tiếp quản các màn hình Admin liên quan trực tiếp đến **AI & model**.
 
 ### Backend – Core AI Service
 
-- **AI Service (LangChain + Gemini)**  
-  - Xây dựng và tối ưu logic chính của AI Service
+- **AI Service (LangChain + Gemini)**
+- **Text → Structured Slide JSON**
+- **Image Style Prompt → Slide JSON**
+- **Model switching (FREE / VIP)**
 
-- **Text → Structured Slide Data (JSON)**  
-  - Xử lý input văn bản từ:
-    - Text Tab
-    - Kết quả từ Speech Service  
-  - Tạo dữ liệu slide dạng JSON
+### Admin Dashboard – AI
 
-- **Image Style Analysis → Style Prompt → Structured Slide Data**  
-  - Nhận kết quả từ Vision Service  
-  - Kết hợp nội dung để tạo slide JSON
-
-- **Model Management**  
-  - Quản lý và chuyển đổi giữa:
-    - `gemini-1.5-flash` (FREE)
-    - `gemini-2.0-flash-exp` (VIP)
+- **LectGen-AI AI Models Config**
+  - Quản lý cấu hình model
+  - Mapping model theo gói FREE / VIP
+  - Enable / disable model
 
 ---
 
-## 4. 🔐 Thiện  
-**Fullstack & AI – Authentication Flows & PDF Service AI**
+## 🔐 Thiện  
+**Fullstack & AI – Authentication, Billing & System Settings**
 
-Thiện phụ trách **toàn bộ luồng xác thực người dùng** và **dịch vụ render PDF cho slide**.
+Thiện tiếp quản các màn hình Admin **liên quan user, billing và cấu hình hệ thống**
+(vì đã nắm Auth + role).
 
 ### User App – Authentication & Onboarding
 
-- **LectGen-AI User App – Onboarding**  
-  - Frontend & Backend  
-  - Quản lý trạng thái đã xem onboarding
-
-- **Sign Up**  
-  - Frontend & Backend  
-  - Email/Password  
-  - Google Auth
-
-- **Log In**  
-  - Frontend & Backend  
-  - Email/Password  
-  - Google Auth
-
-- **Forgot Password**  
-  - Frontend & Backend  
-  - Khôi phục mật khẩu
-
-- **Email Confirmation**  
-  - Frontend & Backend  
-  - Xác nhận email
-
-- **Sign Up / Log In – Success & Error**  
-  - Frontend: hiển thị trạng thái  
-  - Backend: logic điều hướng và xử lý lỗi
+- Onboarding
+- Sign Up / Log In (Email + Google)
+- Forgot Password
+- Email Confirmation
+- Auth success / error states
 
 ### Backend – PDF Service
 
-- **PDF Service (Puppeteer)**  
-  - Render slide JSON thành PDF
+- PDF Service (Puppeteer)
+- Template Management (Basic / Premium)
 
-- **Template Management**  
-  - Quản lý template:
-    - Basic
-    - Premium  
-  - Áp dụng theo vai trò người dùng
+### Admin Dashboard – User & Billing
+
+- **LectGen-AI User List Management**
+  - CRUD users
+  - Assign role FREE / VIP
+
+- **LectGen-AI User Details**
+  - Thông tin user
+  - Trạng thái subscription
+
+- **LectGen-AI Subscriptions & Billing**
+  - Gói VIP
+  - Doanh thu
+  - Subscription status
+
+- **LectGen-AI General Settings**
+  - Cấu hình hệ thống chung
 
 ---
 
-## 5. 🖼️ Dũng  
-**Backend – Vision Service & Admin: Usage & Quota**
+## 🖼️ Dũng  
+**Backend – Vision Service, Usage, Quota & Admin Monitoring**
 
-Dũng phụ trách **dịch vụ phân tích hình ảnh AI** và **quản lý usage/quota trên Admin Dashboard**.
+Dũng tiếp quản toàn bộ **monitoring + quota + log**, đúng với backend-heavy scope.
 
 ### Backend – Vision Service
 
-- **Vision Service**  
-  - Phân tích hình ảnh mẫu (Image → Style Analysis)
+- Image → Style Analysis
+- Extract:
+  - Color scheme
+  - Layout type
+  - Font style
+- Generate style prompt gửi Core AI Service
 
-- **Extract Style Data**  
-  - Trích xuất:
-    - Color scheme  
-    - Layout type  
-    - Font style  
-  - Chuyển thành style prompt gửi sang Core AI Service
+### User App – Image Input
 
-- **User App – Image / Template Input**  
-  - Frontend:  
-    - Upload ảnh  
-    - Preview phân tích style  
-  - Backend:  
-    - API nhận ảnh  
-    - Trả kết quả phân tích từ Vision Service
+- Upload ảnh mẫu
+- Preview style analysis
+- API phân tích ảnh
 
-### Admin Dashboard – Usage & Quota
+### Admin Dashboard – Monitoring
 
-- **LectGen-AI Usage & Quota Overview**  
-  - Frontend & Backend  
-  - Hiển thị:
-    - Thống kê sử dụng AI  
-    - Quota theo user / gói  
-  - Backend:
-    - Logic quản lý quota  
-    - Rate limiting
+- **LectGen-AI Usage & Quota Overview**
+  - Thống kê usage AI
+  - Quota theo user / gói
+  - Rate limiting
+
+- **LectGen-AI Dashboard Overview**
+  - KPI tổng
+  - Biểu đồ sử dụng hệ thống
+
+- **LectGen-AI System Logs**
+  - View / filter log
+  - Audit system actions
 
 ---
 
-## ✅ TÓM TẮT PHÂN CÔNG
+## ✅ TÓM TẮT PHÂN CÔNG 
 
-- **Mai Anh**: Toàn bộ Admin Dashboard *(trừ Usage & Quota)*  
-- **Bình**: Chat Interface của User App & Speech Service AI  
-- **An**: Core AI Service *(LangChain + Gemini)*  
-- **Thiện**: Authentication, Onboarding & PDF Service AI  
-- **Dũng**: Vision Service AI & Admin Usage / Quota
+- **Bình**
+  - User Chat App
+  - Speech Service AI
+  - Admin: Slide & Content
+
+- **An**
+  - Core AI Service
+  - Admin: AI Models Config
+
+- **Thiện**
+  - Auth & Onboarding
+  - PDF Service
+  - Admin: Users, Billing, Settings
+
+- **Dũng**
+  - Vision Service
+  - Admin: Usage, Quota, Dashboard Overview, System Logs
 
 ---
