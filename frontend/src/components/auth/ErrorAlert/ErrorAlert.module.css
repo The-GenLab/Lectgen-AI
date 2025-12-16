@@ -1,0 +1,59 @@
+.errorPanel {
+  width: 100%;
+}
+
+.errorBox {
+  border-radius: 12px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 12px 16px;
+}
+
+.errorContent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.errorIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: #dc2626;
+}
+
+.errorText {
+  flex: 1;
+  min-width: 0;
+}
+
+.errorTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #991b1b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.errorMessage {
+  font-size: 13px;
+  color: #b91c1c;
+  margin: 2px 0 0 0;
+  line-height: 1.4;
+}
+
+.errorClose {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #dc2626;
+  transition: color 0.15s;
+}
+
+.errorClose:hover {
+  color: #991b1b;
+}

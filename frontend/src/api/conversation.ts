@@ -1,5 +1,3 @@
-import { getAuthHeaders } from '../utils/auth';
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export interface Conversation {
@@ -21,7 +19,10 @@ export const conversationApi = {
   async getConversations(): Promise<Conversation[]> {
     const response = await fetch(`${API_URL}/conversations`, {
       method: 'GET',
-      headers: getAuthHeaders(), // Tự động thêm Bearer token
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // Include cookies for auth
     });
 
     const result = await response.json();
@@ -37,7 +38,10 @@ export const conversationApi = {
   async createConversation(title: string): Promise<Conversation> {
     const response = await fetch(`${API_URL}/conversations`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
       body: JSON.stringify({ title }),
     });
 
@@ -54,7 +58,10 @@ export const conversationApi = {
   async getMessages(conversationId: string): Promise<Message[]> {
     const response = await fetch(`${API_URL}/conversations/${conversationId}/messages`, {
       method: 'GET',
-      headers: getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
     });
 
     const result = await response.json();
@@ -70,7 +77,10 @@ export const conversationApi = {
   async sendMessage(conversationId: string, content: string): Promise<Message> {
     const response = await fetch(`${API_URL}/conversations/${conversationId}/messages`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
       body: JSON.stringify({ content }),
     });
 

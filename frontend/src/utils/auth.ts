@@ -1,35 +1,45 @@
-// Get auth token from localStorage
-export const getAuthToken = (): string | null => {
-  return localStorage.getItem('token');
-};
+import { authApi } from '../api/auth';
 
-// Get auth headers with Bearer token
+// Get auth headers for API requests (credentials will be sent via cookies)
 export const getAuthHeaders = (): HeadersInit => {
-  const token = getAuthToken();
   return {
     'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
   };
 };
 
 // Get auth headers for file upload (without Content-Type)
 export const getAuthHeadersForUpload = (): HeadersInit => {
-  const token = getAuthToken();
-  return {
-    ...(token && { Authorization: `Bearer ${token}` }),
-  };
+  return {};
 };
 
-// Check if user is authenticated
+// Check if user is authenticated (sync check using localStorage)
 export const isAuthenticated = (): boolean => {
-  return !!getAuthToken();
+  // Quick check: if user data exists in localStorage, assume authenticated
+  // The actual token is stored in HTTP-only cookie (not accessible via JS)
+  return !!localStorage.getItem('user');
+};
+
+// Verify authentication with backend (async)
+export const verifyAuth = async (): Promise<boolean> => {
+  try {
+    await authApi.me();
+    return true;
+  } catch {
+    // Clear local user data if token is invalid
+    localStorage.removeItem('user');
+    return false;
+  }
 };
 
 // Logout user
-export const logout = (): void => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  window.location.href = '/log-in-or-create-account';
+export const logout = async (): Promise<void> => {
+  try {
+    await authApi.logout();
+  } catch {
+    // Clear local storage even if API call fails
+    localStorage.removeItem('user');
+  }
+  window.location.href = '/login';
 };
 
 // Get user from localStorage

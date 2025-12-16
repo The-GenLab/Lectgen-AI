@@ -1,0 +1,259 @@
+/* Success Page Styles */
+
+.pageContainer {
+  position: relative;
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  flex-direction: column;
+  background-color: #f6f7f8;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  white-space: nowrap;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 16px 24px;
+}
+
+@media (min-width: 1024px) {
+  .header {
+    padding: 16px 40px;
+  }
+}
+
+.headerLogo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logoIconWrapper {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background-color: rgba(19, 109, 236, 0.1);
+  color: #136dec;
+}
+
+.logoIconWrapper svg {
+  width: 24px;
+  height: 24px;
+}
+
+.logoText {
+  color: #0f172a;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+/* Main Layout */
+.mainLayout {
+  display: flex;
+  height: 100%;
+  flex-grow: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.contentContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 480px;
+  flex: 1;
+  justify-content: center;
+}
+
+/* Success Card */
+.successCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  padding: 32px 16px;
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* Visual Illustration */
+.illustrationWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.glowEffect {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(19, 109, 236, 0.2);
+  border-radius: 9999px;
+  filter: blur(32px);
+  transform: scale(1.5);
+}
+
+.mainImage {
+  position: relative;
+  z-index: 10;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  border-radius: 16px;
+  width: 128px;
+  height: 128px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBGvqDwMjzlchVG6s2lt_9p7NRg6tWiaHoCYh1lMgaZ9OP9dkMGyQgLGEmNcnaJ8UPgh3vL0DqDxq7zwWNLRRZ5sZv6yIyorerywz9SGstRRYpxZNnM2hsD-wU5P0frsR6GD4FmQedUls1KzQ-HdpcrDLkpiP2inDIBcL0A1o-HgCYgKWKK4pcVCifq45KsWRRtvKlsH0Z2mf75ybkEzw5Z9vir_oJJhLFYYhO82hV7xS43mFLo5IA9lTiF3ObDU-sV-X9oZI0eK30");
+}
+
+.statusBadge {
+  position: absolute;
+  bottom: -12px;
+  right: -12px;
+  z-index: 20;
+  display: flex;
+  height: 40px;
+  width: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: #22c55e;
+  color: #ffffff;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 4px solid #f6f7f8;
+}
+
+.statusBadge svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Text Content */
+.textContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.title {
+  color: #0f172a;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+.description {
+  color: #64748b;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.625;
+  max-width: 360px;
+  margin: 0;
+}
+
+/* Progress Bar Section */
+.progressSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px;
+  margin-top: 8px;
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.progressBarWrapper {
+  height: 6px;
+  width: 100%;
+  border-radius: 9999px;
+  background-color: #e2e8f0;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  border-radius: 9999px;
+  background-color: #136dec;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  transition: width 0.5s ease-out;
+}
+
+/* Manual Redirect Link */
+.redirectLink {
+  padding-top: 8px;
+}
+
+.redirectLink a {
+  color: #136dec;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: underline;
+  text-decoration-color: rgba(19, 109, 236, 0.3);
+  text-underline-offset: 4px;
+  transition: color 0.2s;
+}
+
+.redirectLink a:hover {
+  color: #2563eb;
+}
+
+/* Footer */
+.footer {
+  width: 100%;
+  padding: 24px;
+  text-align: center;
+}
+
+.footerText {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
