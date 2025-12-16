@@ -2,9 +2,10 @@ import sequelize from '../config/database';
 import User from './User';
 import Conversation from './Conversation';
 import Message from './Message';
+import TemplateImage from './TemplateImage';
 
 // Export all models
-export { User, Conversation, Message };
+export { User, Conversation, Message, TemplateImage };
 
 // Sync database (development only)
 export const syncDatabase = async (force: boolean = false) => {

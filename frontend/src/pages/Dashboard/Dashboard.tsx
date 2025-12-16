@@ -11,11 +11,14 @@ import { getAvatarUrl } from '../../utils/file';
 export default function Dashboard() {
   const [input, setInput] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [pdfs, setPdfs] = useState<PDFDocument[]>([]);
-  const [isLoadingPDFs, setIsLoadingPDFs] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
+  const uploadMenuRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   // Fetch user profile on mount
@@ -41,7 +44,6 @@ export default function Dashboard() {
   // Fetch user's PDFs on mount
   useEffect(() => {
     const fetchPDFs = async () => {
-      setIsLoadingPDFs(true);
       try {
         const data = await getUserPDFs();
         setPdfs(data);
@@ -68,22 +70,62 @@ export default function Dashboard() {
             updatedAt: new Date(Date.now() - 86400000).toISOString(),
           }
         ]);
-      } finally {
-        setIsLoadingPDFs(false);
       }
     };
 
     fetchPDFs();
   }, []);
-  
+
   const handleSubmit = () => {
-    if (!input.trim()) return;
-    // TODO: Send message to backend
+    if (!input.trim() && uploadedImages.length === 0) return;
+    // TODO: Send message + images to backend
     console.log('Send message:', input);
+    console.log('With images:', uploadedImages.length);
+    // Clear after send
+    setInput('');
+    setUploadedImages([]);
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+
+    // Filter valid images
+    const validImages = files.filter(file => {
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name} không phải là file ảnh`);
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`${file.name} vượt quá 5MB`);
+        return false;
+      }
+      return true;
+    });
+
+    // Add to uploaded images (allow multiple)
+    setUploadedImages(prev => [...prev, ...validImages]);
+    setShowUploadMenu(false);
+
+    // Reset input
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddButtonClick = () => {
+    setShowUploadMenu(!showUploadMenu);
+  };
+
+  const handleImageOptionClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handleLogout = () => {
-    logout(); // Hàm logout đã có window.location.href, không cần navigate
+    logout();
   };
 
   // Close menu when clicking outside
@@ -92,16 +134,19 @@ export default function Dashboard() {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
+      if (uploadMenuRef.current && !uploadMenuRef.current.contains(event.target as Node)) {
+        setShowUploadMenu(false);
+      }
     };
 
-    if (showUserMenu) {
+    if (showUserMenu || showUploadMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showUserMenu]);
+  }, [showUserMenu, showUploadMenu]);
 
   // Show loading state
   if (isLoadingUser || !user) {
@@ -273,12 +318,71 @@ export default function Dashboard() {
         </div>
 
         <div className={styles.inputSection}>
+          {/* Image Thumbnails Preview */}
+          {uploadedImages.length > 0 && (
+            <div className={styles.thumbnailContainer}>
+              {uploadedImages.map((file, index) => (
+                <div key={index} className={styles.thumbnail}>
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={file.name}
+                    className={styles.thumbnailImage}
+                  />
+                  <button
+                    className={styles.removeThumbnailBtn}
+                    onClick={() => handleRemoveImage(index)}
+                    title="Xóa ảnh"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                  <div className={styles.thumbnailName}>{file.name}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className={styles.inputWrapper}>
-            <button className={styles.addBtn}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M12 5v14m-7-7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
+            <div className={styles.addBtnWrapper} ref={uploadMenuRef}>
+              <button className={styles.addBtn} onClick={handleAddButtonClick}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 5v14m-7-7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                {uploadedImages.length > 0 && (
+                  <span className={styles.uploadBadge}>{uploadedImages.length}</span>
+                )}
+              </button>
+
+              {/* Upload Menu */}
+              {showUploadMenu && (
+                <div className={styles.uploadMenu}>
+                  <button className={styles.uploadMenuItem} onClick={handleImageOptionClick}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+                      <path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    Upload ảnh
+                  </button>
+                  <button className={styles.uploadMenuItem}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="3.5" stroke="currentColor" strokeWidth="2" />
+                      <path d="M12 1v4m0 14v4M1 12h4m14 0h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    Chụp ảnh
+                  </button>
+                  <button className={styles.uploadMenuItem}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9l-7-7z" stroke="currentColor" strokeWidth="2" />
+                      <path d="M13 2v7h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    Upload file
+                  </button>
+                </div>
+              )}
+            </div>
+
             <input
               type="text"
               className={styles.input}
@@ -286,6 +390,15 @@ export default function Dashboard() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+            />
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: 'none' }}
+              onChange={handleImageUpload}
             />
             <button className={styles.voiceBtn}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -296,7 +409,7 @@ export default function Dashboard() {
             <button
               className={styles.submitBtn}
               onClick={handleSubmit}
-              disabled={!input.trim()}
+              disabled={!input.trim() && uploadedImages.length === 0}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" fill="currentColor" />

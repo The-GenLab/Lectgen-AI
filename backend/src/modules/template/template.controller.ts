@@ -1,0 +1,105 @@
+import { Request, Response } from 'express';
+import { successResponse, errorResponse } from '../../shared/utils/response';
+// @ts-ignore - Import from same module
+import templateService from './template.service';
+
+// Multer file type
+interface UploadedFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  buffer: Buffer;
+  size: number;
+}
+
+class TemplateController {
+  /**
+   * Upload template image
+   * POST /api/template/upload
+   */
+  async uploadTemplate(req: Request & { file?: UploadedFile }, res: Response) {
+    try {
+      if (!req.file) {
+        return errorResponse(res, 'No file uploaded', 400);
+      }
+
+      const userId = req.user!.id;
+      const conversationId = req.body.conversationId;
+
+      const templateImage = await templateService.uploadTemplate(
+        req.file,
+        userId,
+        conversationId
+      );
+
+      return successResponse(res, templateImage, 'Template uploaded successfully', 201);
+    } catch (error) {
+      console.error('Upload template error:', error);
+      return errorResponse(res, error instanceof Error ? error.message : 'Failed to upload template');
+    }
+  }
+
+  /**
+   * Get user's template images
+   * GET /api/template
+   */
+  async getTemplates(req: Request, res: Response) {
+    try {
+      const userId = req.user!.id;
+      const { analyzed } = req.query;
+
+      const filter: any = { userId };
+      if (analyzed !== undefined) {
+        filter.analyzed = analyzed === 'true';
+      }
+
+      const templates = await templateService.getTemplates(filter);
+      return successResponse(res, templates);
+    } catch (error) {
+      console.error('Get templates error:', error);
+      return errorResponse(res, error instanceof Error ? error.message : 'Failed to get templates');
+    }
+  }
+
+  /**
+   * Get template by ID
+   * GET /api/template/:id
+   */
+  async getTemplateById(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+
+      const template = await templateService.getTemplateById(id, userId);
+
+      if (!template) {
+        return errorResponse(res, 'Template not found', 404);
+      }
+
+      return successResponse(res, template);
+    } catch (error) {
+      console.error('Get template error:', error);
+      return errorResponse(res, error instanceof Error ? error.message : 'Failed to get template');
+    }
+  }
+
+  /**
+   * Delete template
+   * DELETE /api/template/:id
+   */
+  async deleteTemplate(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+
+      await templateService.deleteTemplate(id, userId);
+      return successResponse(res, null, 'Template deleted successfully');
+    } catch (error) {
+      console.error('Delete template error:', error);
+      return errorResponse(res, error instanceof Error ? error.message : 'Failed to delete template');
+    }
+  }
+}
+
+export default new TemplateController();
