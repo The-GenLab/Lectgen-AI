@@ -9,19 +9,19 @@ const router = Router();
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB
+        fileSize: 10 * 1024 * 1024, // 10MB (increased for documents)
     },
 });
 
 /**
  * @route   POST /api/template/upload
- * @desc    Upload template image
+ * @desc    Upload template files (images and documents)
  * @access  Private
  */
 router.post(
     '/upload',
     authenticate,
-    upload.single('file'),
+    upload.array('file', 10),
     templateController.uploadTemplate
 );
 

@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import TemplateImage from '../../core/models/TemplateImage';
+import TemplateFile from '../../core/models/TemplateFile';
 import { storageService } from '../storage';
 
 interface UploadedFile {
@@ -11,23 +11,41 @@ interface UploadedFile {
 
 class TemplateService {
     /**
-     * Upload template image to MinIO
+     * Upload template file (image or document) to MinIO
      */
     async uploadTemplate(
         file: UploadedFile,
         userId: string,
         conversationId?: string
     ) {
-        // Validate file type
-        const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-        if (!allowedMimeTypes.includes(file.mimetype)) {
-            throw new Error('Only JPG and PNG images are allowed');
+        // Determine file type and validate
+        const imageMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        const documentMimeTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'text/plain'
+        ];
+
+        let fileType: 'image' | 'document';
+        let bucketName: string;
+        let maxSize: number;
+
+        if (imageMimeTypes.includes(file.mimetype)) {
+            fileType = 'image';
+            bucketName = 'template-files';
+            maxSize = 5 * 1024 * 1024; // 5MB for images
+        } else if (documentMimeTypes.includes(file.mimetype)) {
+            fileType = 'document';
+            bucketName = 'template-files';
+            maxSize = 10 * 1024 * 1024; // 10MB for documents
+        } else {
+            throw new Error('Invalid file type. Only images (JPG, PNG) and documents (PDF, DOCX, TXT) are allowed');
         }
 
-        // Validate file size (max 5MB)
-        const maxSize = 5 * 1024 * 1024; // 5MB
+        // Validate file size
         if (file.size > maxSize) {
-            throw new Error('File size must be less than 5MB');
+            throw new Error(`File size must be less than ${maxSize / 1024 / 1024}MB`);
         }
 
         // Generate unique filename
@@ -36,27 +54,28 @@ class TemplateService {
 
         // Upload to MinIO
         const objectName = await storageService.uploadFile(
-            'template-images',
+            bucketName,
             file.buffer,
             uniqueFileName,
             file.mimetype
         );
 
-        // Generate presigned URL
-        const fileUrl = await storageService.getPresignedUrl('template-images', objectName);
+        // generate presigned URL
+        const fileUrl = await storageService.getPresignedUrl(bucketName, objectName);
 
-        // Save to database
-        const templateImage = await TemplateImage.create({
+        // save to database
+        const templateFile = await TemplateFile.create({
             userId,
             conversationId,
             fileUrl,
             fileName: file.originalname,
             fileSize: file.size,
             mimeType: file.mimetype,
+            fileType,
             analyzed: false,
         });
 
-        return templateImage;
+        return templateFile;
     }
 
     /**
@@ -67,7 +86,7 @@ class TemplateService {
         analyzed?: boolean;
         conversationId?: string;
     }) {
-        const templates = await TemplateImage.findAll({
+        const templates = await TemplateFile.findAll({
             where: filter,
             order: [['createdAt', 'DESC']],
         });
@@ -79,7 +98,7 @@ class TemplateService {
      * Get template by ID (with user ownership check)
      */
     async getTemplateById(id: string, userId: string) {
-        const template = await TemplateImage.findOne({
+        const template = await TemplateFile.findOne({
             where: { id, userId },
         });
 
@@ -123,7 +142,7 @@ class TemplateService {
             stylePrompt?: string;
         }
     ) {
-        const template = await TemplateImage.findByPk(id);
+        const template = await TemplateFile.findByPk(id);
 
         if (!template) {
             throw new Error('Template not found');

@@ -15,25 +15,25 @@ interface UploadedFile {
 
 class TemplateController {
   /**
-   * Upload template image
+   * Upload template files (images and documents)
    * POST /api/template/upload
    */
-  async uploadTemplate(req: Request & { file?: UploadedFile }, res: Response) {
+  async uploadTemplate(req: any, res: Response) {
     try {
-      if (!req.file) {
-        return errorResponse(res, 'No file uploaded', 400);
+      if (!req.files || req.files.length === 0) {
+        return errorResponse(res, 'No files uploaded', 400);
       }
 
       const userId = req.user!.id;
       const conversationId = req.body.conversationId;
 
-      const templateImage = await templateService.uploadTemplate(
-        req.file,
-        userId,
-        conversationId
+      const uploadedFiles = await Promise.all(
+        req.files.map((file: UploadedFile) =>
+          templateService.uploadTemplate(file, userId, conversationId)
+        )
       );
 
-      return successResponse(res, templateImage, 'Template uploaded successfully', 201);
+      return successResponse(res, uploadedFiles, `${uploadedFiles.length} file(s) uploaded successfully`, 201);
     } catch (error) {
       console.error('Upload template error:', error);
       return errorResponse(res, error instanceof Error ? error.message : 'Failed to upload template');

@@ -14,7 +14,7 @@ const minioClient = new Client({
 // Bucket names
 export const BUCKETS = {
   AUDIO: 'audio-recordings',
-  IMAGES: 'template-images',
+  FILES: 'template-files',
   PDFS: 'generated-pdfs',
   AVATARS: 'user-avatars',
 };

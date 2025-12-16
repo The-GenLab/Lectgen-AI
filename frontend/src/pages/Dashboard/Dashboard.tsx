@@ -3,22 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import styles from './Dashboard.module.css';
 import { logout } from '../../utils/auth';
 import PDFPreview from '../../components/PDFPreview';
+import FileUploadPanel, { UploadButton } from '../../components/FileUploadPanel';
 import { getUserPDFs } from '../../api/pdf';
 import { getProfile } from '../../api/user';
 import type { PDFDocument } from '../../api/pdf';
 import { getAvatarUrl } from '../../utils/file';
+import { uploadTemplateImage } from '../../api/template';
 
 export default function Dashboard() {
   const [input, setInput] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [pdfs, setPdfs] = useState<PDFDocument[]>([]);
   const [user, setUser] = useState<any>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const uploadMenuRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   // Fetch user profile on mount
@@ -76,20 +77,17 @@ export default function Dashboard() {
     fetchPDFs();
   }, []);
 
-  const handleSubmit = () => {
-    if (!input.trim() && uploadedImages.length === 0) return;
-    // TODO: Send message + images to backend
-    console.log('Send message:', input);
-    console.log('With images:', uploadedImages.length);
-    // Clear after send
-    setInput('');
-    setUploadedImages([]);
+  const handleRemoveImage = (index: number) => {
+    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
 
-    // Filter valid images
     const validImages = files.filter(file => {
       if (!file.type.startsWith('image/')) {
         alert(`${file.name} không phải là file ảnh`);
@@ -102,27 +100,82 @@ export default function Dashboard() {
       return true;
     });
 
-    // Add to uploaded images (allow multiple)
     setUploadedImages(prev => [...prev, ...validImages]);
-    setShowUploadMenu(false);
-
-    // Reset input
     if (event.target) {
       event.target.value = '';
     }
   };
 
-  const handleRemoveImage = (index: number) => {
-    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+
+    const validFiles = files.filter(file => {
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain'
+      ];
+
+      if (!allowedTypes.includes(file.type)) {
+        alert(`${file.name} không phải là định dạng hỗ trợ (PDF, DOC, DOCX, TXT)`);
+        return false;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`${file.name} vượt quá 10MB`);
+        return false;
+      }
+      return true;
+    });
+
+    setUploadedFiles(prev => [...prev, ...validFiles]);
+    if (event.target) {
+      event.target.value = '';
+    }
   };
 
-  const handleAddButtonClick = () => {
-    setShowUploadMenu(!showUploadMenu);
+  const handleSubmit = async () => {
+    if (!input.trim() && uploadedImages.length === 0 && uploadedFiles.length === 0) return;
+
+    setIsUploading(true);
+
+    try {
+      // Upload images to backend (saves to MinIO + DB)
+      const uploadedImageIds: string[] = [];
+      for (const image of uploadedImages) {
+        const result = await uploadTemplateImage(image);
+        uploadedImageIds.push(result.id);
+        console.log('Image uploaded:', result.fileName, '→', result.fileUrl);
+      }
+
+      // Upload documents to backend (now supports PDF, DOCX, TXT)
+      const uploadedFileIds: string[] = [];
+      for (const file of uploadedFiles) {
+        const result = await uploadTemplateImage(file); // Same endpoint now supports documents
+        uploadedFileIds.push(result.id);
+        console.log('Document uploaded:', result.fileName, '→', result.fileUrl);
+      }
+
+      // TODO: Send message with uploaded file IDs to conversation service
+      console.log('Send message:', input);
+      console.log('With uploaded images:', uploadedImageIds);
+      console.log('With uploaded documents:', uploadedFileIds);
+
+      // Clear after successful upload
+      setInput('');
+      setUploadedImages([]);
+      setUploadedFiles([]);
+
+      alert('Upload thành công!');
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Upload thất bại: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  const handleImageOptionClick = () => {
-    fileInputRef.current?.click();
-  };
+
 
   const handleLogout = () => {
     logout();
@@ -134,19 +187,16 @@ export default function Dashboard() {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
-      if (uploadMenuRef.current && !uploadMenuRef.current.contains(event.target as Node)) {
-        setShowUploadMenu(false);
-      }
     };
 
-    if (showUserMenu || showUploadMenu) {
+    if (showUserMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showUserMenu, showUploadMenu]);
+  }, [showUserMenu]);
 
   // Show loading state
   if (isLoadingUser || !user) {
@@ -318,71 +368,19 @@ export default function Dashboard() {
         </div>
 
         <div className={styles.inputSection}>
-          {/* Image Thumbnails Preview */}
-          {uploadedImages.length > 0 && (
-            <div className={styles.thumbnailContainer}>
-              {uploadedImages.map((file, index) => (
-                <div key={index} className={styles.thumbnail}>
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt={file.name}
-                    className={styles.thumbnailImage}
-                  />
-                  <button
-                    className={styles.removeThumbnailBtn}
-                    onClick={() => handleRemoveImage(index)}
-                    title="Xóa ảnh"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </button>
-                  <div className={styles.thumbnailName}>{file.name}</div>
-                </div>
-              ))}
-            </div>
-          )}
+          <FileUploadPanel
+            uploadedImages={uploadedImages}
+            uploadedFiles={uploadedFiles}
+            onRemoveImage={handleRemoveImage}
+            onRemoveFile={handleRemoveFile}
+          />
 
           <div className={styles.inputWrapper}>
-            <div className={styles.addBtnWrapper} ref={uploadMenuRef}>
-              <button className={styles.addBtn} onClick={handleAddButtonClick}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 5v14m-7-7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                {uploadedImages.length > 0 && (
-                  <span className={styles.uploadBadge}>{uploadedImages.length}</span>
-                )}
-              </button>
-
-              {/* Upload Menu */}
-              {showUploadMenu && (
-                <div className={styles.uploadMenu}>
-                  <button className={styles.uploadMenuItem} onClick={handleImageOptionClick}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-                      <path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                    Upload ảnh
-                  </button>
-                  <button className={styles.uploadMenuItem}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="3.5" stroke="currentColor" strokeWidth="2" />
-                      <path d="M12 1v4m0 14v4M1 12h4m14 0h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                    Chụp ảnh
-                  </button>
-                  <button className={styles.uploadMenuItem}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9l-7-7z" stroke="currentColor" strokeWidth="2" />
-                      <path d="M13 2v7h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                    Upload file
-                  </button>
-                </div>
-              )}
-            </div>
-
+            <UploadButton
+              totalCount={uploadedImages.length + uploadedFiles.length}
+              onImageUpload={handleImageUpload}
+              onFileUpload={handleFileUpload}
+            />
             <input
               type="text"
               className={styles.input}
@@ -390,15 +388,6 @@ export default function Dashboard() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-            />
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              style={{ display: 'none' }}
-              onChange={handleImageUpload}
             />
             <button className={styles.voiceBtn}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -409,12 +398,28 @@ export default function Dashboard() {
             <button
               className={styles.submitBtn}
               onClick={handleSubmit}
-              disabled={!input.trim() && uploadedImages.length === 0}
+              disabled={isUploading || (!input.trim() && uploadedImages.length === 0 && uploadedFiles.length === 0)}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" fill="currentColor" />
-                <path d="M10 8l6 4-6 4V8z" fill="white" />
-              </svg>
+              {isUploading ? (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+                  <path d="M12 2a10 10 0 0110 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <animateTransform
+                      attributeName="transform"
+                      type="rotate"
+                      from="0 12 12"
+                      to="360 12 12"
+                      dur="1s"
+                      repeatCount="indefinite"
+                    />
+                  </path>
+                </svg>
+              ) : (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" fill="currentColor" />
+                  <path d="M10 8l6 4-6 4V8z" fill="white" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
