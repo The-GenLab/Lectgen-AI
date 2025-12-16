@@ -7,6 +7,7 @@ import authRoutes from "./modules/auth/auth.routes";
 import conversationRoutes from "./modules/conversation/conversation.routes";
 import userRoutes from "./modules/user/user.routes";
 import fileRoutes from "./modules/file/file.routes";
+import speechRoutes from "./modules/speech/speech.routes";
 import { errorHandler, notFoundHandler } from "./shared/middleware/error.middleware";
 
 configDotenv();
@@ -43,6 +44,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use("/api/auth", authRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/speech", speechRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.json({
