@@ -76,6 +76,19 @@ services:
       postgres:
         condition: service_healthy
 
+  whisper:
+    image: ghcr.io/ggml-org/whisper.cpp:main
+    container_name: lectgen-whisper
+    restart: always
+    entrypoint: ["bash", "-lc", "tr -d '\\r' < /start-whisper.sh > /tmp/start-whisper.sh; chmod +x /tmp/start-whisper.sh; exec bash /tmp/start-whisper.sh"]
+    volumes:
+      - whisper_models:/models
+      - ./scripts/start-whisper.sh:/start-whisper.sh:ro
+    ports:
+      - "8081:8080"
+    networks:
+      - lectgen-network
+
   # Backend (Development with hot reload)
   backend:
     build:
@@ -109,6 +122,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      whisper:
+        condition: service_started
     develop:
       watch:
         - path: ./backend/src
@@ -122,6 +137,7 @@ volumes:
   minio_data:
   redis_data:
   pgadmin_data:
+  whisper_models:
 
 
 networks:
