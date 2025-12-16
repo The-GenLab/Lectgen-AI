@@ -83,6 +83,8 @@ services:
       dockerfile: ../Dockerfile.backend.dev
     container_name: lectgen-backend
     restart: always
+    env_file:
+      - ./.env
     environment:
       NODE_ENV: development
       PORT: 5000
@@ -92,8 +94,6 @@ services:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin123
       REDIS_URL: redis://redis:6379
-      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
     ports:
       - "5000:5000"
       - "9229:9229"
