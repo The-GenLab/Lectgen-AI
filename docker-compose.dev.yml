@@ -76,6 +76,26 @@ services:
       postgres:
         condition: service_healthy
 
+  whisper:
+    image: ghcr.io/ggml-org/whisper.cpp:main
+    container_name: lectgen-whisper
+    restart: always
+    entrypoint: ["bash", "-lc", "tr -d '\\r' < /start-whisper.sh > /tmp/start-whisper.sh; chmod +x /tmp/start-whisper.sh; exec bash /tmp/start-whisper.sh"]
+    environment:
+      WHISPER_MODEL_NAME: small
+      WHISPER_LANGUAGE: vi
+      WHISPER_SUPPRESS_NST: "1"
+      WHISPER_PROMPT: ""
+      WHISPER_THREADS: "8"
+      WHISPER_VAD: "0"
+    volumes:
+      - whisper_models:/models
+      - ./scripts/start-whisper.sh:/start-whisper.sh:ro
+    ports:
+      - "8081:8080"
+    networks:
+      - lectgen-network
+
   # Backend (Development with hot reload)
   backend:
     build:
@@ -83,6 +103,8 @@ services:
       dockerfile: ../Dockerfile.backend.dev
     container_name: lectgen-backend
     restart: always
+    env_file:
+      - ./.env
     environment:
       NODE_ENV: development
       PORT: 5000
@@ -92,7 +114,6 @@ services:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin123
       REDIS_URL: redis://redis:6379
-      GOOGLE_API_KEY: AIzaSyANKwVZyvLpd_pvN1dUJ2oabVByuEil4E4
     ports:
       - "5000:5000"
       - "9229:9229"
@@ -108,6 +129,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      whisper:
+        condition: service_started
     develop:
       watch:
         - path: ./backend/src
@@ -121,6 +144,7 @@ volumes:
   minio_data:
   redis_data:
   pgadmin_data:
+  whisper_models:
 
 
 networks:
