@@ -1,0 +1,35 @@
+/* Google Sign In/Up Button - centered */
+.googleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 50px;
+  gap: 12px;
+  padding: 12px 20px;
+  background-color: #ffffff;
+  border: 1px solid #dce0e5;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.googleButton:hover:not(:disabled) {
+  background-color: #f6f7f8;
+}
+
+.googleButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.googleButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.googleButtonText {
+  color: #0d141c;
+  font-size: 14px;
+  font-weight: 600;
+}

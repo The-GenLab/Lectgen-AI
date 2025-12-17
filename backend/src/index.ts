@@ -1,6 +1,7 @@
 import { configDotenv } from "dotenv";
 import express, { Request, Response } from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { syncDatabase } from "./core/models";
 import { initializeBuckets } from "./core/config/minio";
 import authRoutes from "./modules/auth/auth.routes";
@@ -23,6 +24,9 @@ app.use(
     credentials: true,
   }),
 );
+
+// Parse cookies
+app.use(cookieParser());
 
 // Health check endpoint (for Docker HEALTHCHECK)
 app.get("/health", (req: Request, res: Response) => {
