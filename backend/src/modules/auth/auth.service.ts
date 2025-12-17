@@ -182,10 +182,6 @@ class AuthService {
     // Generate reset token
     const resetToken = this.generateResetToken(user.id, user.email);
     
-    // TODO: Send email with reset link
-    // For now, log the token (in production, send via email service)
-    console.log(`[Password Reset] Token for ${email}: ${resetToken}`);
-    console.log(`[Password Reset] Reset URL: ${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`);
 
     return resetToken;
   }

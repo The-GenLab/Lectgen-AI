@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styles from './Success.module.css';
-import { AutoAwesomeIcon, CheckIcon } from '../../components/auth';
+import { AuthHeader, CheckIcon } from '../../components/auth';
 
 export default function Success() {
   const [progress, setProgress] = useState(0);
@@ -31,14 +31,7 @@ export default function Success() {
   return (
     <div className={styles.pageContainer}>
       {/* Top Navigation */}
-      <header className={styles.header}>
-        <div className={styles.headerLogo}>
-          <div className={styles.logoIconWrapper}>
-            <AutoAwesomeIcon />
-          </div>
-          <h2 className={styles.logoText}>LectGen-AI</h2>
-        </div>
-      </header>
+      <AuthHeader />
 
       {/* Main Layout Container */}
       <div className={styles.mainLayout}>

@@ -104,6 +104,7 @@ class AuthController {
             maxSlidesPerMonth: user.maxSlidesPerMonth,
           },
         },
+        token: token
       });
     } catch (error: any) {
       return res.status(401).json({
