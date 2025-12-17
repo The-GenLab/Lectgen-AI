@@ -1,146 +1,215 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import styles from './Login.module.css';
+import { Link, useNavigate } from 'react-router-dom';
+import styles from './Register.module.css';
 import { authApi } from '../../api/auth';
+import {
+  LogoIcon,
+  AutoAwesomeIcon,
+  MailIcon,
+  VisibilityIcon,
+  VisibilityOffIcon,
+  VerifiedUserIcon,
+  SocialButtons,
+  Divider,
+  SubmitButton,
+  ErrorAlert,
+} from '../../components/auth';
 
 export default function Register() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const email = location.state?.email || '';
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [touched, setTouched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const isPasswordValid = password.length >= 12;
-  const showError = touched && !isPasswordValid;
-
-  const handleSubmit = async () => {
-    setTouched(true);
-    if (!isPasswordValid) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) return;
+    if (password.length < 12) {
+      setError('Password must be at least 12 characters');
+      return;
+    }
     
     setLoading(true);
     setError('');
     
     try {
+      // Check if email already exists
+      const { exists } = await authApi.checkEmail(email);
+      if (exists) {
+        setError('Email already registered. Please login instead.');
+        setLoading(false);
+        return;
+      }
+
       const result = await authApi.register({ email, password });
       
-      // Save token to localStorage
-      localStorage.setItem('token', result.data.token);
+      // Save user info to localStorage (token is stored in HTTP-only cookie)
       localStorage.setItem('user', JSON.stringify(result.data.user));
       
-      // Redirect to dashboard
-      console.log('Registration successful:', result);
-      navigate('/');
+      // Redirect to success page
+      navigate('/login-success');
       
-    } catch (err: any) {
-      setError(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className={styles.container}>
-      {/* Left side - Logo */}
-      <div className={styles.leftSection}>
-        <h1 className={styles.logo}>ChatGPT</h1>
-      </div>
+    <div className={styles.registerContainer}>
+      {/* Left Side: Feature / Value Proposition */}
+      <div className={styles.leftFeatureSection}>
+        {/* Background decoration */}
+        <div className={styles.featureBackground}></div>
+        
+        <div className={styles.featureContent}>
+          <div className={styles.featureHeading}>
+            <h1 className={styles.featureTitle}>
+              Get started with LectGen
+            </h1>
+            <p className={styles.featureDescription}>
+              Create professional slides in seconds. No design skills required.
+            </p>
+          </div>
 
-      {/* Right side - Form */}
-      <div className={styles.rightSection}>
-        <div className={styles.formWrapper}>
-          <h2 className={styles.title}>Tạo tài khoản của bạn</h2>
-          <p className={styles.subtitle}>
-            Đặt mật khẩu cho OpenAI để tiếp tục
-          </p>
-
-          {/* Email Display (Read-only) */}
-          <div className={styles.emailDisplay}>
-            <label className={styles.label}>Địa chỉ email</label>
-            <div className={styles.emailReadonly}>
-              {email}
-              <a href="/log-in-or-create-account" className={styles.editLink}>
-                Chỉnh sửa
-              </a>
+          {/* Feature Card Preview */}
+          <div className={styles.featureCard}>
+            <div className={styles.featureCardImage}>
+              <div 
+                className={styles.featureCardImageBg}
+                style={{
+                  backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuD2z7XoLggAuSF2_eYnQO8bTAtJ442jliVXAongsTmRcB18Y4te0c6xCP4q40OjoDLpubgFT0oetyMWmIvUp-gSVYtPRHQUfyEeF9N9JxknAk15dGYalPVDICgsVADLWVptzIm9BhmBxNegDGNoiAgIj8LEw10gw1XUPCi7kGdV2b6YVAVbNLK7LsmBbOPHkFIRFS11ekS17Ebt8NoFuFEPttKneXcmPjVEG7r5h7wx_0uZFLsUvdsI4lKR0sWgt30k-Sl3gFIgI5E")'
+                }}
+              ></div>
+              {/* UI Overlay Simulation */}
+              <div className={styles.featureCardOverlay}>
+                <span className={styles.featureCardIcon}>
+                  <AutoAwesomeIcon />
+                </span>
+                <div className={styles.featureCardOverlayText}>
+                  <span className={styles.featureCardOverlayTitle}>Generating Slides...</span>
+                  <span className={styles.featureCardOverlaySubtitle}>Processing natural language prompt</span>
+                </div>
+                <div className={styles.featureCardPulse}>
+                  <span className={styles.featureCardPulseDot}></span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <p className={styles.featureCardTitle}>AI Powered Design</p>
+              <p className={styles.featureCardSubtitle}>From prompt to presentation in under 30 seconds.</p>
             </div>
           </div>
+
+          <div className={styles.trustBadge}>
+            <VerifiedUserIcon />
+            <span>Trusted by 10,000+ presenters</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side: Sign Up Form */}
+      <div className={styles.rightFormSection}>
+        <div className={styles.registerFormWrapper}>
+          {/* Header/Logo */}
+          <div className={styles.registerHeader}>
+            <div className={styles.registerLogoSection}>
+              <div className={styles.registerLogoIcon}>
+                <LogoIcon />
+              </div>
+              <h2 className={styles.registerLogoText}>LectGen</h2>
+            </div>
+            <div className={styles.registerTitleSection}>
+              <h1 className={styles.registerTitle}>Create your account</h1>
+              <p className={styles.registerSubtitle}>Start creating AI presentations for free</p>
+            </div>
+          </div>
+
+          {/* Social Auth */}
+          <SocialButtons variant="register" disabled={loading} />
+
+          {/* Divider */}
+          <Divider text="Or continue with email" />
 
           {/* Error Message */}
           {error && (
-            <div style={{ 
-              padding: '12px', 
-              backgroundColor: '#fef2f2', 
-              border: '1px solid #fecaca', 
-              borderRadius: '8px',
-              color: '#991b1b',
-              marginBottom: '16px',
-              fontSize: '14px'
-            }}>
-              {error}
-            </div>
+            <ErrorAlert 
+              title="Registration Failed" 
+              message={error} 
+              closable={false}
+            />
           )}
 
-          {/* Password Input */}
-          <div className={styles.passwordField}>
-            <label className={styles.label}>Mật khẩu</label>
-            <div className={styles.passwordWrapper}>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                className={`${styles.emailInput} ${showError ? styles.inputError : ''}`}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onBlur={() => setTouched(true)}
-                disabled={loading}
-              />
-              <button
-                type="button"
-                className={styles.togglePassword}
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
-              >
-                {showPassword ? (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                ) : (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                )}
-              </button>
-            </div>
-            
-            {/* Password validation message */}
-            {showError && (
-              <div className={styles.validationBox}>
-                <p className={styles.validationTitle}>Mật khẩu của bạn phải chứa:</p>
-                <ul className={styles.validationList}>
-                  <li className={password.length >= 12 ? styles.valid : styles.invalid}>
-                    Ít nhất 12 ký tự
-                  </li>
-                </ul>
+          {/* Form */}
+          <form className={styles.registerForm} onSubmit={handleSubmit}>
+            {/* Email Field */}
+            <label className={styles.registerInputGroup}>
+              <span className={styles.registerInputLabel}>Email address</span>
+              <div className={styles.registerInputWrapper}>
+                <input
+                  className={styles.registerInput}
+                  placeholder="name@example.com"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
+                />
+                <div className={styles.registerInputIcon}>
+                  <MailIcon />
+                </div>
               </div>
-            )}
-          </div>
+            </label>
 
-          {/* Submit button */}
-          <button 
-            className={styles.submitButton} 
-            onClick={handleSubmit}
-            disabled={loading}
-            style={{ opacity: loading ? 0.6 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
-          >
-            {loading ? 'Đang xử lý...' : 'Tiếp tục'}
-          </button>
+            {/* Password Field */}
+            <label className={styles.registerInputGroup}>
+              <span className={styles.registerInputLabel}>Password</span>
+              <div className={styles.registerInputWrapper}>
+                <input
+                  className={styles.registerInput}
+                  placeholder="••••••••"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                />
+                <div 
+                  className={`${styles.registerInputIcon} ${styles.registerInputIconClickable}`}
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
+                </div>
+              </div>
+              <p className={styles.registerInputHint}>Must be at least 8 characters</p>
+            </label>
+
+            {/* Submit Button */}
+            <SubmitButton 
+              loading={loading} 
+              disabled={!email || !password}
+              loadingText="Creating Account..."
+            >
+              Create Account
+            </SubmitButton>
+          </form>
 
           {/* Footer Links */}
-          <div className={styles.footer}>
-            <a href="#" className={styles.footerLink}>Điều khoản sử dụng</a>
-            <span className={styles.separator}>|</span>
-            <a href="#" className={styles.footerLink}>Chính sách riêng tư</a>
+          <div className={styles.registerFooter}>
+            <p className={styles.registerFooterText}>
+              Already have an account? <Link className={styles.registerFooterLink} to="/login">Log in</Link>
+            </p>
+            <p className={styles.registerTermsText}>
+              By signing up, you agree to our{' '}
+              <a className={styles.registerTermsLink} href="#">Terms of Service</a> and{' '}
+              <a className={styles.registerTermsLink} href="#">Privacy Policy</a>.
+            </p>
           </div>
         </div>
       </div>

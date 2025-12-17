@@ -15,16 +15,22 @@ declare global {
 // Authenticate middleware
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
+    // Get token from cookie first, then fallback to Authorization header
+    let token = req.cookies?.token;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
+
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: 'No token provided',
       });
     }
-
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     const user = await authService.getUserFromToken(token);
     req.user = user;

@@ -1,5 +1,3 @@
-import { getAuthHeaders, getAuthHeadersForUpload } from '../utils/auth';
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export interface UpdateProfileData {
@@ -11,8 +9,8 @@ export const updateProfile = async (data: UpdateProfileData) => {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      ...getAuthHeaders(),
     },
+    credentials: 'include', // Include cookies for auth
     body: JSON.stringify(data),
   });
 
@@ -27,7 +25,11 @@ export const updateProfile = async (data: UpdateProfileData) => {
 
 export const getProfile = async () => {
   const response = await fetch(`${API_URL}/users/profile`, {
-    headers: getAuthHeaders(),
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
   });
 
   const result = await response.json();
@@ -45,9 +47,7 @@ export const uploadAvatar = async (file: File) => {
 
   const response = await fetch(`${API_URL}/files/avatar`, {
     method: 'POST',
-    headers: {
-      ...getAuthHeadersForUpload(), // Don't set Content-Type, let browser set multipart/form-data
-    },
+    credentials: 'include', // Include cookies for auth
     body: formData,
   });
 
