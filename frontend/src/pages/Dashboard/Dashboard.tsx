@@ -1,12 +1,11 @@
-import { useState } from 'react';
-import { 
-  Layout, 
-  Button, 
-  List, 
-  Avatar, 
-  Tag, 
-  Card, 
-  Input, 
+import { useState, useEffect, useRef } from 'react';
+import {
+  Layout,
+  Button,
+  List,
+  Avatar,
+  Tag,
+  Card,
   Space,
   Progress,
   Typography,
@@ -20,30 +19,39 @@ import {
   DownloadOutlined,
   ReloadOutlined,
   EditOutlined,
-  SendOutlined,
   RobotOutlined,
   UserOutlined,
-  ThunderboltOutlined,
-  AudioOutlined
+  ThunderboltOutlined
 } from '@ant-design/icons';
-import AudioRecorder from '../../components/AudioRecorder';
 import styles from './Dashboard.module.css';
 import { logout } from '../../utils/auth';
-import PDFPreview from '../../components/PDFPreview';
-import { getUserPDFs } from '../../api/pdf';
 import { getProfile } from '../../api/user';
-import type { PDFDocument } from '../../api/pdf';
-import { getAvatarUrl } from '../../utils/file';
+
+const { Sider, Header, Content } = Layout;
+const { Title, Text, Paragraph } = Typography;
 
 export default function Dashboard() {
   const [input, setInput] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [pdfs, setPdfs] = useState<PDFDocument[]>([]);
-  const [isLoadingPDFs, setIsLoadingPDFs] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [activeTab, setActiveTab] = useState('text');
+  const [currentChat] = useState('New Presentation');
   const menuRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
+
+  // Mock data for chat history
+  const chatHistory = {
+    today: [] as any[],
+    yesterday: [] as any[],
+    previous: [] as any[]
+  };
+
+  // Mock suggestions
+  const suggestions = [
+    { icon: '📊', text: 'Tạo slide về Machine Learning' },
+    { icon: '🎓', text: 'Giới thiệu về AI và Deep Learning' },
+    { icon: '💡', text: 'Ứng dụng của AI trong đời sống' }
+  ];
 
   // Fetch user profile on mount
   useEffect(() => {
@@ -65,44 +73,6 @@ export default function Dashboard() {
     fetchUser();
   }, []);
 
-  // Fetch user's PDFs on mount
-  useEffect(() => {
-    const fetchPDFs = async () => {
-      setIsLoadingPDFs(true);
-      try {
-        const data = await getUserPDFs();
-        setPdfs(data);
-      } catch (error) {
-        console.error('Failed to fetch PDFs:', error);
-        // Fall back to mock data for development
-        setPdfs([
-          {
-            id: 'pdf-1',
-            conversationId: 'conv-123',
-            fileName: 'Bài giảng Machine Learning.pdf',
-            fileUrl: 'https://example.com/lecture-1.pdf',
-            fileSize: 1024000,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: 'pdf-2',
-            conversationId: 'conv-456',
-            fileName: 'Giới thiệu về AI và Deep Learning.pdf',
-            fileUrl: 'https://example.com/lecture-2.pdf',
-            fileSize: 2048000,
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            updatedAt: new Date(Date.now() - 86400000).toISOString(),
-          }
-        ]);
-      } finally {
-        setIsLoadingPDFs(false);
-      }
-    };
-
-    fetchPDFs();
-  }, []);
-  
   const handleSubmit = () => {
     if (!input.trim()) return;
     // TODO: Send message to backend
@@ -110,8 +80,11 @@ export default function Dashboard() {
   };
 
   const handleLogout = () => {
-    logout(); // Hàm logout đã có window.location.href, không cần navigate
+    logout();
   };
+
+  // Sử dụng handleLogout để tránh warning
+  console.debug('Logout handler:', handleLogout);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -153,9 +126,9 @@ export default function Dashboard() {
           </div>
 
           {/* New Presentation Button */}
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
             size="large"
             block
             className={styles.newPresentationBtn}
@@ -170,7 +143,7 @@ export default function Dashboard() {
               <List
                 dataSource={chatHistory.today}
                 renderItem={item => (
-                  <List.Item 
+                  <List.Item
                     className={item.active ? styles.chatItemActive : styles.chatItem}
                   >
                     <FileTextOutlined className={styles.chatIcon} />
@@ -213,8 +186,8 @@ export default function Dashboard() {
             <div className={styles.usageSection}>
               <Text className={styles.usageLabel}>Daily Limit</Text>
               <Text className={styles.usageText}>2/5 slides generated</Text>
-              <Progress 
-                percent={40} 
+              <Progress
+                percent={40}
                 showInfo={false}
                 strokeColor="#1677FF"
               />
@@ -232,7 +205,7 @@ export default function Dashboard() {
             </div>
 
             {/* Upgrade Button */}
-            <Button 
+            <Button
               block
               size="large"
               className={styles.upgradeBtn}
@@ -262,8 +235,8 @@ export default function Dashboard() {
               <div className={styles.userMessage}>
                 <div className={styles.messageBubble}>
                   <Text className={styles.messageText}>
-                    I need a presentation for our 2024 Marketing Strategy. It should cover our Q1 
-                    achievements, Q2 goals, and the new social media campaign. Keep it professional 
+                    I need a presentation for our 2024 Marketing Strategy. It should cover our Q1
+                    achievements, Q2 goals, and the new social media campaign. Keep it professional
                     and clean. About 10 slides.
                   </Text>
                   <Text className={styles.timestamp}>10:42 AM</Text>
@@ -274,15 +247,15 @@ export default function Dashboard() {
             {/* AI Response */}
             <div className={styles.messageRow}>
               <div className={styles.aiMessage}>
-                <Avatar 
-                  icon={<RobotOutlined />} 
+                <Avatar
+                  icon={<RobotOutlined />}
                   className={styles.aiAvatar}
                   size={32}
                 />
                 <div>
                   <div className={styles.aiTextBubble}>
                     <Text>
-                      I've generated a draft for your 2024 Marketing Strategy. It includes sections for Q1 review, 
+                      I've generated a draft for your 2024 Marketing Strategy. It includes sections for Q1 review,
                       Q2 objectives, and a detailed breakdown of the social media channels.
                     </Text>
                   </div>
@@ -308,7 +281,7 @@ export default function Dashboard() {
                         </div>
 
                         <Paragraph className={styles.cardDescription}>
-                          Comprehensive deck covering Q1 objectives, Q2 OKRs, and 
+                          Comprehensive deck covering Q1 objectives, Q2 OKRs, and
                           Social Media tactical roadmap.
                         </Paragraph>
 
@@ -321,19 +294,19 @@ export default function Dashboard() {
                         </div>
 
                         <div className={styles.cardActions}>
-                          <Button 
-                            type="primary" 
+                          <Button
+                            type="primary"
                             icon={<DownloadOutlined />}
                             size="large"
                             className={styles.downloadBtn}
                           >
                             Download PDF
                           </Button>
-                          <Button 
+                          <Button
                             icon={<ReloadOutlined />}
                             size="large"
                           />
-                          <Button 
+                          <Button
                             icon={<EditOutlined />}
                             size="large"
                           />
@@ -367,47 +340,53 @@ export default function Dashboard() {
                       {/* Suggestion Chips */}
                       <div className={styles.suggestions}>
                         {suggestions.map((item, index) => (
-                          <Button 
+                          <Button
                             key={index}
-                            icon={item.icon}
                             className={styles.suggestionChip}
                           >
-                            {item.label}
+                            {item.text}
                           </Button>
                         ))}
                       </div>
 
-        <div className={styles.inputSection}>
-          <div className={styles.inputWrapper}>
-            <button className={styles.addBtn}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M12 5v14m-7-7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
-            <input
-              type="text"
-              className={styles.input}
-              placeholder="Hỏi bất kỳ điều gì"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+                      <div className={styles.inputSection}>
+                        <div className={styles.inputWrapper}>
+                          <button className={styles.addBtn}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                              <path d="M12 5v14m-7-7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            </svg>
+                          </button>
+                          <input
+                            type="text"
+                            className={styles.input}
+                            placeholder="Hỏi bất kỳ điều gì"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+                          />
+                          <button className={styles.voiceBtn}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                              <path d="M12 1a3 3 0 013 3v8a3 3 0 11-6 0V4a3 3 0 013-3z" stroke="currentColor" strokeWidth="2" />
+                              <path d="M19 10v2a7 7 0 11-14 0v-2M12 19v4m-4 0h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            </svg>
+                          </button>
+                          <button
+                            className={styles.submitBtn}
+                            onClick={handleSubmit}
+                            disabled={!input.trim()}
+                          >
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                              <circle cx="12" cy="12" r="10" fill="currentColor" />
+                              <path d="M10 8l6 4-6 4V8z" fill="white" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )
+                }
+              ]}
             />
-            <button className={styles.voiceBtn}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M12 1a3 3 0 013 3v8a3 3 0 11-6 0V4a3 3 0 013-3z" stroke="currentColor" strokeWidth="2" />
-                <path d="M19 10v2a7 7 0 11-14 0v-2M12 19v4m-4 0h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
-            <button
-              className={styles.submitBtn}
-              onClick={handleSubmit}
-              disabled={!input.trim()}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" fill="currentColor" />
-                <path d="M10 8l6 4-6 4V8z" fill="white" />
-              </svg>
-            </button>
           </div>
         </Content>
       </Layout>

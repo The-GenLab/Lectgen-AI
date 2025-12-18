@@ -197,7 +197,6 @@
   margin: 0 auto;
 }
 
-<<<<<<< HEAD
 .addBtn,
 .imageBtn,
 .voiceBtn {
@@ -207,14 +206,12 @@
   border: none;
   color: #8e8e8e;
   cursor: pointer;
-=======
 /* MESSAGES */
 .messageRow {
   margin-bottom: 24px;
 }
 
 .userMessage {
->>>>>>> origin/main
   display: flex;
   justify-content: flex-end;
 }
@@ -256,147 +253,11 @@
   position: relative;
 }
 
-<<<<<<< HEAD
 .addBtn:hover,
 .imageBtn:hover,
 .voiceBtn:hover {
   background-color: #3f3f3f;
   color: #ececec;
-=======
-.aiTextBubble {
-  background: white;
-  padding: 14px 18px;
-  border-radius: 16px;
-  border-top-left-radius: 4px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-  line-height: 1.6;
-}
-
-/* PRESENTATION CARD */
-.presentationCard {
-  border-radius: 12px;
-  margin-bottom: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e8e8e8;
-}
-
-.cardContent {
-  display: flex;
-  gap: 20px;
-}
-
-.thumbnail {
-  width: 200px;
-  height: 150px;
-  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.thumbnailPlaceholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.slideOverlay {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.cardDetails {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.cardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.cardTitle {
-  margin: 0 !important;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.readyTag {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 10px;
-}
-
-.cardDescription {
-  margin: 0 !important;
-  color: #595959;
-  line-height: 1.6;
-}
-
-.cardMeta {
-  margin-top: auto;
-}
-
-.cardActions {
-  display: flex;
-  gap: 8px;
-}
-
-.downloadBtn {
-  flex: 1;
-  border-radius: 8px;
-  height: 40px;
-  font-weight: 500;
-}
-
-/* INPUT AREA */
-.inputArea {
-  background: white;
-  border-top: 1px solid #e8e8e8;
-  padding: 16px 24px;
-  max-width: 1000px;
-  width: 100%;
-  margin: 0 auto;
-}
-
-.suggestions {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  justify-content: center;
-}
-
-.suggestionChip {
-  border-radius: 20px;
-  font-size: 13px;
-  height: 32px;
-  border-color: #d9d9d9;
-}
-
-.suggestionChip:hover {
-  border-color: #1677ff;
-  color: #1677ff;
-}
-
-.inputBar {
-  margin-bottom: 8px;
->>>>>>> origin/main
 }
 
 /* Image button badge */
@@ -457,16 +318,14 @@
   border-radius: 3px;
 }
 
-<<<<<<< HEAD
 .chatHistory::-webkit-scrollbar-thumb:hover {
   background: #5e5e5e;
 }
 
 /* Upload-related styles removed - moved to FileUploadPanel.module.css */
-=======
 .chatHistory::-webkit-scrollbar-thumb:hover,
 .messagesContainer::-webkit-scrollbar-thumb:hover {
   background: #bfbfbf;
 }
 
->>>>>>> origin/main
+}
