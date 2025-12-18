@@ -1,24 +1,47 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { 
+  Layout, 
+  Button, 
+  List, 
+  Avatar, 
+  Tag, 
+  Card, 
+  Input, 
+  Space,
+  Progress,
+  Typography,
+  Divider,
+  Tabs
+} from 'antd';
+import {
+  PlusOutlined,
+  FileTextOutlined,
+  EllipsisOutlined,
+  DownloadOutlined,
+  ReloadOutlined,
+  EditOutlined,
+  SendOutlined,
+  RobotOutlined,
+  UserOutlined,
+  ThunderboltOutlined,
+  AudioOutlined
+} from '@ant-design/icons';
+import AudioRecorder from '../../components/AudioRecorder';
 import styles from './Dashboard.module.css';
 import { logout } from '../../utils/auth';
 import PDFPreview from '../../components/PDFPreview';
-import FileUploadPanel, { UploadButton } from '../../components/FileUploadPanel';
 import { getUserPDFs } from '../../api/pdf';
 import { getProfile } from '../../api/user';
 import type { PDFDocument } from '../../api/pdf';
 import { getAvatarUrl } from '../../utils/file';
-import { uploadTemplateImage } from '../../api/template';
 
 export default function Dashboard() {
   const [input, setInput] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [pdfs, setPdfs] = useState<PDFDocument[]>([]);
+  const [isLoadingPDFs, setIsLoadingPDFs] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
-  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -45,6 +68,7 @@ export default function Dashboard() {
   // Fetch user's PDFs on mount
   useEffect(() => {
     const fetchPDFs = async () => {
+      setIsLoadingPDFs(true);
       try {
         const data = await getUserPDFs();
         setPdfs(data);
@@ -71,114 +95,22 @@ export default function Dashboard() {
             updatedAt: new Date(Date.now() - 86400000).toISOString(),
           }
         ]);
+      } finally {
+        setIsLoadingPDFs(false);
       }
     };
 
     fetchPDFs();
   }, []);
-
-  const handleRemoveImage = (index: number) => {
-    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+  
+  const handleSubmit = () => {
+    if (!input.trim()) return;
+    // TODO: Send message to backend
+    console.log('Send message:', input);
   };
-
-  const handleRemoveFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-
-    const validImages = files.filter(file => {
-      if (!file.type.startsWith('image/')) {
-        alert(`${file.name} không phải là file ảnh`);
-        return false;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        alert(`${file.name} vượt quá 5MB`);
-        return false;
-      }
-      return true;
-    });
-
-    setUploadedImages(prev => [...prev, ...validImages]);
-    if (event.target) {
-      event.target.value = '';
-    }
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-
-    const validFiles = files.filter(file => {
-      const allowedTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain'
-      ];
-
-      if (!allowedTypes.includes(file.type)) {
-        alert(`${file.name} không phải là định dạng hỗ trợ (PDF, DOC, DOCX, TXT)`);
-        return false;
-      }
-      if (file.size > 10 * 1024 * 1024) {
-        alert(`${file.name} vượt quá 10MB`);
-        return false;
-      }
-      return true;
-    });
-
-    setUploadedFiles(prev => [...prev, ...validFiles]);
-    if (event.target) {
-      event.target.value = '';
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!input.trim() && uploadedImages.length === 0 && uploadedFiles.length === 0) return;
-
-    setIsUploading(true);
-
-    try {
-      // Upload images to backend (saves to MinIO + DB)
-      const uploadedImageIds: string[] = [];
-      for (const image of uploadedImages) {
-        const result = await uploadTemplateImage(image);
-        uploadedImageIds.push(result.id);
-        console.log('Image uploaded:', result.fileName, '→', result.fileUrl);
-      }
-
-      // Upload documents to backend (now supports PDF, DOCX, TXT)
-      const uploadedFileIds: string[] = [];
-      for (const file of uploadedFiles) {
-        const result = await uploadTemplateImage(file); // Same endpoint now supports documents
-        uploadedFileIds.push(result.id);
-        console.log('Document uploaded:', result.fileName, '→', result.fileUrl);
-      }
-
-      // TODO: Send message with uploaded file IDs to conversation service
-      console.log('Send message:', input);
-      console.log('With uploaded images:', uploadedImageIds);
-      console.log('With uploaded documents:', uploadedFileIds);
-
-      // Clear after successful upload
-      setInput('');
-      setUploadedImages([]);
-      setUploadedFiles([]);
-
-      alert('Upload thành công!');
-    } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Upload thất bại: ' + (error instanceof Error ? error.message : 'Unknown error'));
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-
 
   const handleLogout = () => {
-    logout();
+    logout(); // Hàm logout đã có window.location.href, không cần navigate
   };
 
   // Close menu when clicking outside
@@ -210,177 +142,248 @@ export default function Dashboard() {
   }
 
   return (
-    <div className={styles.container}>
-      {/* Sidebar */}
-      <aside className={styles.sidebar}>
-        <div className={styles.sidebarHeader}>
-          <button className={styles.newChatBtn}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 5v14m-7-7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            Đoạn chat mới
-          </button>
-        </div>
-
-        <div className={styles.chatHistory}>
-          <div className={styles.historySection}>
-            <div className={styles.historyTitle}>Các đoạn chat của bạn</div>
-            {/* Placeholder for chat history */}
+    <Layout className={styles.layout}>
+      {/* LEFT SIDEBAR */}
+      <Sider width={260} className={styles.sider}>
+        <div className={styles.siderContent}>
+          {/* Logo */}
+          <div className={styles.logo}>
+            <div className={styles.logoIcon}>🎓</div>
+            <Title level={4} className={styles.logoText}>LectGen-AI</Title>
           </div>
-        </div>
 
-        <div className={styles.sidebarFooter}>
-          <button className={styles.menuItem}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
-              <path d="M12 1v6m0 6v6M1 12h6m6 0h6" stroke="currentColor" strokeWidth="2" />
-            </svg>
-            Thư viện
-          </button>
-          <button className={styles.menuItem}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2" />
-              <rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2" />
-              <rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2" />
-              <rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2" />
-            </svg>
-            Dự án
-          </button>
-          <div className={styles.userProfileWrapper} ref={menuRef}>
-            <button
-              className={styles.userProfile}
-              onClick={() => setShowUserMenu(!showUserMenu)}
+          {/* New Presentation Button */}
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />} 
+            size="large"
+            block
+            className={styles.newPresentationBtn}
+          >
+            New Presentation
+          </Button>
+
+          {/* Chat History */}
+          <div className={styles.chatHistory}>
+            <div className={styles.historySection}>
+              <Text className={styles.sectionLabel}>TODAY</Text>
+              <List
+                dataSource={chatHistory.today}
+                renderItem={item => (
+                  <List.Item 
+                    className={item.active ? styles.chatItemActive : styles.chatItem}
+                  >
+                    <FileTextOutlined className={styles.chatIcon} />
+                    <Text className={styles.chatTitle}>{item.title}</Text>
+                  </List.Item>
+                )}
+              />
+            </div>
+
+            <div className={styles.historySection}>
+              <Text className={styles.sectionLabel}>YESTERDAY</Text>
+              <List
+                dataSource={chatHistory.yesterday}
+                renderItem={item => (
+                  <List.Item className={styles.chatItem}>
+                    <FileTextOutlined className={styles.chatIcon} />
+                    <Text className={styles.chatTitle}>{item.title}</Text>
+                  </List.Item>
+                )}
+              />
+            </div>
+
+            <div className={styles.historySection}>
+              <Text className={styles.sectionLabel}>PREVIOUS 7 DAYS</Text>
+              <List
+                dataSource={chatHistory.previous}
+                renderItem={item => (
+                  <List.Item className={styles.chatItem}>
+                    <FileTextOutlined className={styles.chatIcon} />
+                    <Text className={styles.chatTitle}>{item.title}</Text>
+                  </List.Item>
+                )}
+              />
+            </div>
+          </div>
+
+          {/* Bottom Section */}
+          <div className={styles.siderBottom}>
+            {/* Usage */}
+            <div className={styles.usageSection}>
+              <Text className={styles.usageLabel}>Daily Limit</Text>
+              <Text className={styles.usageText}>2/5 slides generated</Text>
+              <Progress 
+                percent={40} 
+                showInfo={false}
+                strokeColor="#1677FF"
+              />
+            </div>
+
+            <Divider style={{ margin: '12px 0' }} />
+
+            {/* User Card */}
+            <div className={styles.userCard}>
+              <Avatar size={40} icon={<UserOutlined />} className={styles.userAvatar} />
+              <div className={styles.userInfo}>
+                <Text strong className={styles.userName}>John Doe</Text>
+                <Tag color="default" className={styles.userTag}>Free Plan</Tag>
+              </div>
+            </div>
+
+            {/* Upgrade Button */}
+            <Button 
+              block
+              size="large"
+              className={styles.upgradeBtn}
+              icon={<ThunderboltOutlined />}
             >
-              {getAvatarUrl(user.avatarUrl) ? (
-                <img src={getAvatarUrl(user.avatarUrl)!} alt="Avatar" className={styles.avatar} style={{ objectFit: 'cover' }} />
-              ) : (
-                <div className={styles.avatar}>
-                  {(user.name || user.email)?.[0]?.toUpperCase() || 'U'}
-                </div>
-              )}
-              <span className={styles.userName}>
-                {user.name || user.email?.split('@')[0] || 'User'}
-              </span>
-              <span className={styles.userBadge}>Free</span>
-            </button>
+              Upgrade to VIP
+            </Button>
+          </div>
+        </div>
+      </Sider>
 
-            {showUserMenu && (
-              <div className={styles.userMenu}>
-                <button className={styles.userMenuHeader} onClick={() => navigate('/profile')}>
-                  {getAvatarUrl(user.avatarUrl) ? (
-                    <img src={getAvatarUrl(user.avatarUrl)!} alt="Avatar" className={styles.avatar} style={{ objectFit: 'cover' }} />
-                  ) : (
-                    <div className={styles.avatar}>
-                      {(user.name || user.email)?.[0]?.toUpperCase() || 'U'}
-                    </div>
-                  )}
-                  <div className={styles.userInfo}>
-                    <div className={styles.userDisplayName}>
-                      {user.name || user.email?.split('@')[0] || 'User'}
-                    </div>
-                    <div className={styles.userEmail}>{user.email}</div>
+      {/* MAIN CONTENT */}
+      <Layout>
+        {/* Header */}
+        <Header className={styles.header}>
+          <Text className={styles.headerTitle}>
+            Current Chat: <strong>{currentChat}</strong>
+          </Text>
+          <Button type="text" icon={<EllipsisOutlined />} />
+        </Header>
+
+        {/* Chat Content */}
+        <Content className={styles.content}>
+          <div className={styles.messagesContainer}>
+            {/* User Message */}
+            <div className={styles.messageRow}>
+              <div className={styles.userMessage}>
+                <div className={styles.messageBubble}>
+                  <Text className={styles.messageText}>
+                    I need a presentation for our 2024 Marketing Strategy. It should cover our Q1 
+                    achievements, Q2 goals, and the new social media campaign. Keep it professional 
+                    and clean. About 10 slides.
+                  </Text>
+                  <Text className={styles.timestamp}>10:42 AM</Text>
+                </div>
+              </div>
+            </div>
+
+            {/* AI Response */}
+            <div className={styles.messageRow}>
+              <div className={styles.aiMessage}>
+                <Avatar 
+                  icon={<RobotOutlined />} 
+                  className={styles.aiAvatar}
+                  size={32}
+                />
+                <div>
+                  <div className={styles.aiTextBubble}>
+                    <Text>
+                      I've generated a draft for your 2024 Marketing Strategy. It includes sections for Q1 review, 
+                      Q2 objectives, and a detailed breakdown of the social media channels.
+                    </Text>
                   </div>
-                  <span className={styles.userBadgeMenu}>Free</span>
-                </button>
 
-                <div className={styles.userMenuDivider}></div>
+                  {/* Presentation Card */}
+                  <Card className={styles.presentationCard}>
+                    <div className={styles.cardContent}>
+                      {/* Thumbnail */}
+                      <div className={styles.thumbnail}>
+                        <div className={styles.thumbnailPlaceholder}>
+                          <FileTextOutlined style={{ fontSize: 48, color: '#1677FF' }} />
+                        </div>
+                        <div className={styles.slideOverlay}>Cover Slide</div>
+                      </div>
 
-                <button className={styles.userMenuItem}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M13 10V3L4 14h7v7l9-11h-7z" fill="currentColor" />
-                  </svg>
-                  Nâng cấp gói
-                </button>
+                      {/* Details */}
+                      <div className={styles.cardDetails}>
+                        <div className={styles.cardHeader}>
+                          <Title level={5} className={styles.cardTitle}>
+                            Marketing Strategy 2024
+                          </Title>
+                          <Tag color="success" className={styles.readyTag}>READY</Tag>
+                        </div>
 
-                <button className={styles.userMenuItem}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor" />
-                  </svg>
-                  Cá nhân hóa
-                </button>
+                        <Paragraph className={styles.cardDescription}>
+                          Comprehensive deck covering Q1 objectives, Q2 OKRs, and 
+                          Social Media tactical roadmap.
+                        </Paragraph>
 
-                <button className={styles.userMenuItem}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81a.488.488 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor" />
-                  </svg>
-                  Cài đặt
-                </button>
+                        <div className={styles.cardMeta}>
+                          <Space size={16}>
+                            <Text type="secondary">📊 10 Slides</Text>
+                            <Text type="secondary">⏱ ~30s gen time</Text>
+                            <Text type="secondary">📁 2.4 MB</Text>
+                          </Space>
+                        </div>
 
-                <div className={styles.userMenuDivider}></div>
+                        <div className={styles.cardActions}>
+                          <Button 
+                            type="primary" 
+                            icon={<DownloadOutlined />}
+                            size="large"
+                            className={styles.downloadBtn}
+                          >
+                            Download PDF
+                          </Button>
+                          <Button 
+                            icon={<ReloadOutlined />}
+                            size="large"
+                          />
+                          <Button 
+                            icon={<EditOutlined />}
+                            size="large"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
 
-                <button className={styles.userMenuItem}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z" fill="currentColor" />
-                  </svg>
-                  Trợ giúp
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginLeft: 'auto' }}>
-                    <path d="M9.29 6.71a.996.996 0 000 1.41L13.17 12l-3.88 3.88a.996.996 0 101.41 1.41l4.59-4.59a.996.996 0 000-1.41L10.7 6.7c-.38-.38-1.02-.38-1.41.01z" fill="currentColor" />
-                  </svg>
-                </button>
-
-                <button className={styles.userMenuItem} onClick={handleLogout}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" fill="currentColor" />
-                  </svg>
-                  Đăng xuất
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className={styles.main}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>ChatGPT</h1>
-          <button className={styles.upgradeBtn}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M13 10V3L4 14h7v7l9-11h-7z" fill="currentColor" />
-            </svg>
-            Nâng cấp lên Go
-          </button>
-        </div>
-
-        <div className={styles.content}>
-          <div className={styles.emptyState}>
-            <h2 className={styles.greeting}>Chúng ta nên bắt đầu từ đâu?</h2>
-
-            {/* PDF Thumbnails - Show in conversation area */}
-            {pdfs.length > 0 && (
-              <div className={styles.pdfThumbnails}>
-                <h3 className={styles.pdfSectionTitle}>Bài giảng đã tạo</h3>
-                <div className={styles.pdfGrid}>
-                  {pdfs.map((pdf) => (
-                    <PDFPreview
-                      key={pdf.id}
-                      pdfUrl={pdf.fileUrl}
-                      fileName={pdf.fileName}
-                      createdAt={pdf.createdAt}
-                      conversationId={pdf.conversationId}
-                      onDownload={() => console.log('Downloaded:', pdf.fileName)}
-                    />
-                  ))}
+                  <Text className={styles.timestamp}>10:43 AM</Text>
                 </div>
               </div>
-            )}
+            </div>
           </div>
-        </div>
+
+          {/* Input Area */}
+          <div className={styles.inputArea}>
+            <Tabs
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              centered
+              items={[
+                {
+                  key: 'text',
+                  label: (
+                    <span>
+                      <FileTextOutlined /> Text
+                    </span>
+                  ),
+                  children: (
+                    <>
+                      {/* Suggestion Chips */}
+                      <div className={styles.suggestions}>
+                        {suggestions.map((item, index) => (
+                          <Button 
+                            key={index}
+                            icon={item.icon}
+                            className={styles.suggestionChip}
+                          >
+                            {item.label}
+                          </Button>
+                        ))}
+                      </div>
 
         <div className={styles.inputSection}>
-          <FileUploadPanel
-            uploadedImages={uploadedImages}
-            uploadedFiles={uploadedFiles}
-            onRemoveImage={handleRemoveImage}
-            onRemoveFile={handleRemoveFile}
-          />
-
           <div className={styles.inputWrapper}>
-            <UploadButton
-              totalCount={uploadedImages.length + uploadedFiles.length}
-              onImageUpload={handleImageUpload}
-              onFileUpload={handleFileUpload}
-            />
+            <button className={styles.addBtn}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 5v14m-7-7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
             <input
               type="text"
               className={styles.input}
@@ -398,32 +401,17 @@ export default function Dashboard() {
             <button
               className={styles.submitBtn}
               onClick={handleSubmit}
-              disabled={isUploading || (!input.trim() && uploadedImages.length === 0 && uploadedFiles.length === 0)}
+              disabled={!input.trim()}
             >
-              {isUploading ? (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.3" />
-                  <path d="M12 2a10 10 0 0110 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <animateTransform
-                      attributeName="transform"
-                      type="rotate"
-                      from="0 12 12"
-                      to="360 12 12"
-                      dur="1s"
-                      repeatCount="indefinite"
-                    />
-                  </path>
-                </svg>
-              ) : (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" fill="currentColor" />
-                  <path d="M10 8l6 4-6 4V8z" fill="white" />
-                </svg>
-              )}
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" fill="currentColor" />
+                <path d="M10 8l6 4-6 4V8z" fill="white" />
+              </svg>
             </button>
           </div>
-        </div>
-      </main>
-    </div>
+        </Content>
+      </Layout>
+    </Layout>
   );
 }
+
