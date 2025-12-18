@@ -8,7 +8,7 @@ class SpeechController {
             if (!req.user) {
                 return errorResponse(res, 'Unauthorized', 401);
             }
-
+    
             const file = req.file;
             if (!file) {
                 return errorResponse(res, 'No audio file uploaded', 400);
