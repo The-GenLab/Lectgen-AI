@@ -100,6 +100,26 @@ class TemplateController {
       return errorResponse(res, error instanceof Error ? error.message : 'Failed to delete template');
     }
   }
+
+  /**
+   * Analyze template image style
+   * POST /api/template/analyze
+   */
+  async analyzeTemplate(req: any, res: Response) {
+    try {
+      if (!req.file) {
+        return errorResponse(res, 'No image file uploaded', 400);
+      }
+
+      const imageBuffer = req.file.buffer;
+      const analysisResult = await templateService.analyzeTemplateStyle(imageBuffer);
+
+      return successResponse(res, analysisResult, 'Image analyzed successfully');
+    } catch (error) {
+      console.error('Analyze template error:', error);
+      return errorResponse(res, error instanceof Error ? error.message : 'Failed to analyze template');
+    }
+  }
 }
 
 export default new TemplateController();

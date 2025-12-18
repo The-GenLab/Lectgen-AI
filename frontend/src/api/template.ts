@@ -17,6 +17,20 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+export interface AnalysisResult {
+    traits: Array<{
+        label: string;
+        icon: string;
+    }>;
+    colors: string[];
+    layoutType: string;
+    colorScheme: string;
+    dimensions: {
+        width: number;
+        height: number;
+    };
+}
+
 export interface TemplateFile {
     id: string;
     userId: string;
@@ -85,4 +99,24 @@ export async function getTemplateById(id: string): Promise<TemplateFile> {
  */
 export async function deleteTemplateImage(id: string): Promise<void> {
     await api.delete(`/template/${id}`);
+}
+
+/**
+ * Analyze template image style
+ */
+export async function analyzeTemplate(imageFile: File): Promise<AnalysisResult> {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+
+    const response = await api.post<{ success: boolean; data: AnalysisResult }>(
+        '/template/analyze',
+        formData,
+        {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        }
+    );
+
+    return response.data.data;
 }

@@ -26,6 +26,18 @@ router.post(
 );
 
 /**
+ * @route   POST /api/template/analyze
+ * @desc    Analyze template image style
+ * @access  Private
+ */
+router.post(
+    '/analyze',
+    authenticate,
+    upload.single('image'),
+    templateController.analyzeTemplate
+);
+
+/**
  * @route   GET /api/template
  * @desc    Get user's template images
  * @access  Private

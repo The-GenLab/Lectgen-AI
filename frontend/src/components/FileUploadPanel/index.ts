@@ -1,1 +1,1 @@
-export { default, UploadButton } from './FileUploadPanel';
+export { default, UploadButton, TemplateAnalyzer } from './FileUploadPanel';

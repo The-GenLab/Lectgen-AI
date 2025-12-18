@@ -181,3 +181,193 @@
 .thumbnailContainer::-webkit-scrollbar-thumb:hover {
     background: #5e5e5e;
 }
+
+/* Template Analyzer Styles */
+.analyzerContainer {
+    padding: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.analyzerContent {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.uploadSection {
+    position: relative;
+}
+
+.uploadZone {
+    border: 2px dashed #d9d9d9;
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: #fafafa;
+}
+
+.uploadZone:hover {
+    border-color: #4096ff;
+    background: #f0f7ff;
+}
+
+.uploadIcon {
+    margin-bottom: 16px;
+}
+
+.uploadText {
+    color: #595959;
+}
+
+.uploadTitle {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #262626;
+}
+
+.uploadHint {
+    font-size: 14px;
+    color: #8c8c8c;
+    margin: 0;
+}
+
+.analysisContainer {
+    position: relative;
+}
+
+.statusBadge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+}
+
+.previewSection {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    margin-top: 40px;
+}
+
+.imagePreview {
+    position: relative;
+    width: 240px;
+    height: 180px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid #e8e8e8;
+    background: #f5f5f5;
+    flex-shrink: 0;
+}
+
+.imagePreview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.uploadedBadge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: #1890ff;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.removeBtn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    line-height: 1;
+    transition: all 0.2s;
+    z-index: 5;
+}
+
+.removeBtn:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+}
+
+.detectedTraits {
+    flex: 1;
+}
+
+.detectedTraits h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #8c8c8c;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+}
+
+.traitTags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.traitTag {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    border: 1px solid #d9d9d9;
+    background: white;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.traitTag span {
+    font-size: 16px;
+}
+
+.topicSection {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.topicLabel {
+    font-size: 14px;
+    font-weight: 500;
+    color: #262626;
+}
+
+.topicInput {
+    border-radius: 8px;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.confirmBtn {
+    border-radius: 8px;
+    height: 42px;
+    padding: 0 32px;
+    font-weight: 500;
+}
