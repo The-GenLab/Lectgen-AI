@@ -104,19 +104,28 @@ export default function Dashboard() {
       return;
     }
 
-    // Thông báo confirm thành công
-    alert('Confirm thành công!\n\n' +
-      `Chủ đề: ${topic}\n\n` +
-      `Template: ${templateImage.name}\n\n` +
-      `Phân tích ảnh:\n${JSON.stringify(analysisResult, null, 2)}`);
+    try {
+      console.log('Chủ đề:', topic);
+      console.log('File:', templateImage.name);
+      console.log('Phân tích:', JSON.stringify(analysisResult, null, 2));
 
-    // Log ra console để xem chi tiết
-    console.log('Chủ đề:', topic);
-    console.log('File:', templateImage.name);
-    console.log('Phân tích:', JSON.stringify(analysisResult, null, 2));
+      // Upload template to MinIO
+      const uploadedTemplate = await uploadTemplateImage(templateImage);
+      console.log('Upload thành công:', uploadedTemplate);
 
-    // Switch về text tab
-    setActiveTab('text');
+      // Show success alert
+      alert('Upload thành công!\n\n' +
+        `Chủ đề: ${topic}\n\n` +
+        `Template ID: ${uploadedTemplate.id}\n\n` +
+        `File URL: ${uploadedTemplate.fileUrl}\n\n` +
+        `Phân tích:\n${JSON.stringify(analysisResult, null, 2)}`);
+
+      // Switch về text tab
+      setActiveTab('text');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      alert('Lỗi upload: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+    }
   };
 
   return (
