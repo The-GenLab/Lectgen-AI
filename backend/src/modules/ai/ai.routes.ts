@@ -15,4 +15,4 @@ router.post("/generate", aiController.genareate);
  */
 router.post("/generate-with-retry", aiController.genareateWithRetry);
 
-export default aiRouter;
+export default router;
