@@ -27,6 +27,40 @@ class AIService {
   }
 
   /**
+   * Additional business logic validation (beyond Zod schema)
+   */
+  private validateBusinessRules(slideData: SlideData): void {
+    // Check for duplicate slide titles
+    const titles = slideData.slides.map((s) => s.title.toLowerCase());
+    const uniqueTitles = new Set(titles);
+    if (titles.length !== uniqueTitles.size) {
+      console.warn(" [ AIService Warning ]: Duplicate slide titles detected");
+    }
+
+    // Check if first slide is an introduction
+    const firstSlide = slideData.slides[0];
+    if (
+      !firstSlide.title.toLowerCase().includes("intro") &&
+      !firstSlide.title.toLowerCase().includes("overview")
+    ) {
+      console.warn(
+        "[ AIService Warning ]: First slide might not be an introduction",
+      );
+    }
+
+    // Check if last slide is a conclusion/summary
+    const lastSlide = slideData.slides[slideData.slides.length - 1];
+    if (
+      !lastSlide.title.toLowerCase().includes("conclu") &&
+      !lastSlide.title.toLowerCase().includes("summar")
+    ) {
+      console.warn(
+        "[ AIService Warning ]: Last slide might not be a conclusion",
+      );
+    }
+  }
+
+  /**
    * Generate slide content from text prompt using Zod structured output
    */
   async generateSlideContent(
@@ -93,40 +127,6 @@ class AIService {
       }
 
       throw new Error(`AI generation failed: ${error.message}`);
-    }
-  }
-
-  /**
-   * Additional business logic validation (beyond Zod schema)
-   */
-  private validateBusinessRules(slideData: SlideData): void {
-    // Check for duplicate slide titles
-    const titles = slideData.slides.map((s) => s.title.toLowerCase());
-    const uniqueTitles = new Set(titles);
-    if (titles.length !== uniqueTitles.size) {
-      console.warn(" [ AIService Warning ]: Duplicate slide titles detected");
-    }
-
-    // Check if first slide is an introduction
-    const firstSlide = slideData.slides[0];
-    if (
-      !firstSlide.title.toLowerCase().includes("intro") &&
-      !firstSlide.title.toLowerCase().includes("overview")
-    ) {
-      console.warn(
-        "[ AIService Warning ]: First slide might not be an introduction",
-      );
-    }
-
-    // Check if last slide is a conclusion/summary
-    const lastSlide = slideData.slides[slideData.slides.length - 1];
-    if (
-      !lastSlide.title.toLowerCase().includes("conclu") &&
-      !lastSlide.title.toLowerCase().includes("summar")
-    ) {
-      console.warn(
-        "[ AIService Warning ]: Last slide might not be a conclusion",
-      );
     }
   }
 
