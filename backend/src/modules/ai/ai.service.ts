@@ -16,11 +16,13 @@ class AIService {
       throw new Error("GOOGLE_API_KEY environment variable is not set");
     }
 
+    console.log("[ AI Service ]: apiKey ", apiKey);
+
     this.model = new ChatGoogleGenerativeAI({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       apiKey: apiKey,
       temperature: 0.7,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 8192,
     });
   }
 
@@ -33,7 +35,7 @@ class AIService {
   ): Promise<SlideData> {
     try {
       console.log(
-        "AI Service: Generating slides for:",
+        "[ AI Service ]: Generating slides for:",
         prompt.substring(0, 50) + "...",
       );
 
@@ -55,7 +57,11 @@ class AIService {
 
       const duration = Date.now() - startTime;
 
-      console.log(" AI Service: Generated", slideData.slides.length, "slides");
+      console.log(
+        " [ AI Service ]: Generated",
+        slideData.slides.length,
+        "slides",
+      );
       console.log(" Generation time:", duration, "ms");
 
       // Zod already validated, now do additional business logic validation
@@ -63,7 +69,7 @@ class AIService {
 
       return slideData;
     } catch (error: any) {
-      console.error(" AI Service Error:", error);
+      console.error(" [ AI Service Error ]:", error);
 
       // Handle Zod validation errors
       if (error.name === "ZodError") {
@@ -98,7 +104,7 @@ class AIService {
     const titles = slideData.slides.map((s) => s.title.toLowerCase());
     const uniqueTitles = new Set(titles);
     if (titles.length !== uniqueTitles.size) {
-      console.warn("  Warning: Duplicate slide titles detected");
+      console.warn(" [ AIService Warning ]: Duplicate slide titles detected");
     }
 
     // Check if first slide is an introduction
@@ -107,7 +113,9 @@ class AIService {
       !firstSlide.title.toLowerCase().includes("intro") &&
       !firstSlide.title.toLowerCase().includes("overview")
     ) {
-      console.warn("Warning: First slide might not be an introduction");
+      console.warn(
+        "[ AIService Warning ]: First slide might not be an introduction",
+      );
     }
 
     // Check if last slide is a conclusion/summary
@@ -116,7 +124,9 @@ class AIService {
       !lastSlide.title.toLowerCase().includes("conclu") &&
       !lastSlide.title.toLowerCase().includes("summar")
     ) {
-      console.warn("Warning: Last slide might not be a conclusion");
+      console.warn(
+        "[ AIService Warning ]: Last slide might not be a conclusion",
+      );
     }
   }
 
