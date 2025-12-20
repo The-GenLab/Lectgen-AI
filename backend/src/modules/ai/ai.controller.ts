@@ -28,7 +28,7 @@ class AIController {
    * }
    */
 
-  async genareate(req: Request, res: Response): Promise<Response> {
+  async generate(req: Request, res: Response): Promise<Response> {
     try {
       const { prompt, style = "professional", maxSlides = 10 } = req.body;
 
@@ -84,15 +84,15 @@ class AIController {
         `[ AI Controller ] Generated ${result.slides.length} slides in ${duration} ms`,
       );
 
-      // success respone with metadata
+      // success response with metadata
       return successResponse(
         res,
         {
-          presentaion: result,
+          presentation: result,
           metadata: {
-            sildeCount: result.slides.length,
+            slideCount: result.slides.length,
             style: options.style,
-            generateAt: new Date().toISOString(),
+            generatedAt: new Date().toISOString(),
             duration: `${duration} ms`,
           },
         },
@@ -121,7 +121,7 @@ class AIController {
    *
    * Response: Same as generate() but includes maxRetries in metadata
    */
-  async genareateWithRetry(req: Request, res: Response): Promise<Response> {
+  async generateWithRetry(req: Request, res: Response): Promise<Response> {
     try {
       const {
         prompt,
