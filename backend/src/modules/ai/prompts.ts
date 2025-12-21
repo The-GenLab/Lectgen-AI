@@ -2,7 +2,8 @@
  * AI Prompt Templates for Slide Generation
  */
 
-import { AIGenerationOptions } from './types';
+import { string } from "zod";
+import { AIGenerationOptions } from "./types";
 
 /**
  * System prompt for AI (defines AI behavior)
@@ -23,15 +24,18 @@ Important: You ALWAYS respond with structured JSON matching the exact schema pro
  */
 export const STANDARD_SLIDE_PROMPT = (
   topic: string,
-  options?: AIGenerationOptions
+  options?: AIGenerationOptions,
 ): string => {
   const maxSlides = options?.maxSlides || 8;
-  const style = options?.style || 'professional';
+  const style = options?.style || "professional";
 
   const styleGuidelines = {
-    professional: 'Use formal language, industry terminology, and data-driven insights. Focus on practical applications.',
-    casual: 'Use conversational tone, relatable examples, and engaging storytelling. Make it approachable.',
-    academic: 'Use scholarly language, cite principles, include theoretical frameworks. Emphasize depth and accuracy.',
+    professional:
+      "Use formal language, industry terminology, and data-driven insights. Focus on practical applications.",
+    casual:
+      "Use conversational tone, relatable examples, and engaging storytelling. Make it approachable.",
+    academic:
+      "Use scholarly language, cite principles, include theoretical frameworks. Emphasize depth and accuracy.",
   };
 
   return `Create a comprehensive slide deck on the following topic:
@@ -75,14 +79,62 @@ Generate the slide deck now based on these specifications.`;
 /**
  * LaTeX mode prompt (for future Phase 2)
  */
-export const LATEX_SLIDE_PROMPT = (topic: string): string => {
-  return `Create a LaTeX Beamer presentation on: ${topic}
+export const LATEX_SLIDE_PROMPT = (
+  topic: string,
+  options?: AIGenerationOptions,
+): string => {
+  const style = options?.style || "professional";
 
-Requirements:
-- Use standard Beamer document class
-- Include mathematical formulas where relevant
-- Use TikZ for diagrams if needed
-- Professional academic style
+  const styleGuidelines = {
+    professional: "Formal language, industry terminology, practical focus",
+    casual: "Conversational tone, relatable examples, engaging",
+    academic: "Scholarly language, theoretical frameworks, citations style",
+  };
 
-Return ONLY valid LaTeX code between \\begin{document} and \\end{document}.`;
+  return String.raw`Create a LaTeX Beamer presentation on: ${topic}
+  
+**Style**: ${style}
+${styleGuidelines[style]}
+**Requirements:**
+1. **Structure** (8-12 frames total):
+   - Frame 1: Title page (with \titlepage)
+   - Frame 2: Table of contents (with \tableofcontents)
+   - Frames 3-10: Core content organized in sections
+   - Frame 11: Conclusion/Summary
+   - Frame 12: Q&A / Thank you slide
+2. **LaTeX Structure:**
+   - Start with: \documentclass[10pt]{beamer}
+   - Use theme: \usetheme{Madrid}
+   - Use color theme: \usecolortheme{beaver}
+   - Include packages: inputenc, fontenc, booktabs, graphicx, amsmath
+   - Define title, subtitle, author, institute, date
+   - Use \section{} for organizing content
+   - Each frame must have: \begin{frame}{Title} ... \end{frame}
+3. **Content Guidelines:**
+   - Use itemize/enumerate for lists
+   - Use blocks for definitions: \begin{block}{Title}...\end{block}
+   - Use alertblock for warnings: \begin{alertblock}{Alert}...\end{alertblock}
+   - Use exampleblock for examples
+   - Include mathematical formulas where relevant: $$ ... $$
+   - Use columns for comparisons: \begin{columns}...\end{columns}
+   - Include tables with booktabs if suitable
+   
+4. **Quality Standards:**
+   - Professional academic style
+   - Clear logical flow between sections
+   - Balanced content per frame (not too crowded)
+   - Include speaker notes where helpful
+   - Complete, compilable LaTeX code
+
+5. **CRITICAL OUTPUT RULES (READ CAREFULLY):**
+   - **NO COMMENTS:** Do NOT generate any comments (starting with %) anywhere in the code.
+   - **LINE BREAKS:** The output JSON string must use explicit '\n' for line breaks. Do NOT output the LaTeX code as a single continuous line.
+   - **ONE COMMAND PER LINE:** Ensure every LaTeX command (like \begin, \end, \item, \section) is on its own line.
+   - **ESCAPE:** Properly escape backslashes in the JSON string (e.g., use \\documentclass instead of \documentclass inside the JSON value).
+
+Return structured JSON with:
+{
+  "title": "Main presentation title",
+  "latex_code": "Complete LaTeX code from \\documentclass to \\end{document}"
+}`;
 };
