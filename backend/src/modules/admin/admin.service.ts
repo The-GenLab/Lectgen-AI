@@ -7,11 +7,16 @@ class AdminService {
    */
   async getGlobalStats(startDate?: Date, endDate?: Date) {
     const usageStats = await usageLogRepository.getGlobalStats(startDate, endDate);
-    const totalUsers = await userRepository.countAll();
+    const userStats = await userRepository.getStatistics();
 
     return {
       ...usageStats,
-      totalUsers,
+      totalUsers: userStats.total,
+      usersByRole: {
+        FREE: userStats.free,
+        VIP: userStats.vip,
+        ADMIN: userStats.admin,
+      },
     };
   }
 
