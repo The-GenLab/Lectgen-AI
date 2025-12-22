@@ -2,6 +2,7 @@ import { configDotenv } from "dotenv";
 import express, { Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import passport from "./core/config/google";
 import { syncDatabase } from "./core/models";
 import { initializeBuckets } from "./core/config/minio";
 import authRoutes from "./modules/auth/auth.routes";
@@ -26,6 +27,9 @@ app.use(
 
 // Parse cookies
 app.use(cookieParser());
+
+// Initialize Passport (no session)
+app.use(passport.initialize());
 
 // Health check endpoint (for Docker HEALTHCHECK)
 app.get("/health", (req: Request, res: Response) => {

@@ -82,6 +82,8 @@ services:
       context: ./backend
       dockerfile: ../Dockerfile.backend.dev
     container_name: lectgen-backend
+    env_file:
+      - .env
     restart: always
     environment:
       NODE_ENV: development

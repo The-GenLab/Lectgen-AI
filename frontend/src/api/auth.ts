@@ -1,5 +1,8 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+// Google OAuth URL
+export const getGoogleAuthUrl = () => `${API_URL}/auth/google`;
+
 export interface RegisterRequest {
   email: string;
   password: string;
@@ -203,12 +206,12 @@ export const authApi = {
 
   // Reset password with token
   async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-    const response = await fetch(`${API_URL}/auth/reset-password`, {
+    const response = await fetch(`${API_URL}/auth/reset-password?token=${encodeURIComponent(token)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ token, newPassword }),
+      body: JSON.stringify({ newPassword }),
       credentials: 'include',
     });
 
@@ -216,6 +219,25 @@ export const authApi = {
 
     if (!response.ok) {
       throw new Error(result.message || 'Failed to reset password');
+    }
+
+    return result;
+  },
+
+  // Validate reset token
+  async validateResetToken(token: string): Promise<{ success: boolean; message: string; data?: { valid: boolean; email: string } }> {
+    const response = await fetch(`${API_URL}/auth/validate-reset-token?token=${encodeURIComponent(token)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Invalid or expired token');
     }
 
     return result;

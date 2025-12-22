@@ -5,6 +5,7 @@ import { UserRole, isVipOrAdmin, isFreeUser, isFutureDate, QUOTA } from '../../s
 // User attributes
 export interface UserAttributes {
   id: string;
+  googleId: string | null;
   email: string;
   name: string;
   avatarUrl: string | null;
@@ -24,6 +25,7 @@ export interface UserCreationAttributes
 // User model
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: string;
+  public googleId!: string | null;
   public email!: string;
   public name!: string;
   public avatarUrl!: string | null;
@@ -57,6 +59,11 @@ User.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    googleId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
+    },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -77,7 +84,8 @@ User.init(
     },
     passwordHash: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
+      //cho phep null de dang nhap google oauth
     },
     role: {
       type: DataTypes.ENUM(UserRole.FREE, UserRole.VIP, UserRole.ADMIN),

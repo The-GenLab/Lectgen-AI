@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import styles from './Register.module.css';
 import { authApi } from '../../api/auth';
 import {
@@ -22,6 +22,29 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [searchParams] = useSearchParams();
+
+  // Handle Google OAuth callback (in case user is redirected here)
+  useEffect(() => {
+    const googleAuthSuccess = searchParams.get('google_auth');
+    const googleAuthError = searchParams.get('error');
+
+    if (googleAuthSuccess === 'success') {
+      // Google signup successful, fetch user info and redirect
+      const fetchUserAndRedirect = async () => {
+        try {
+          const result = await authApi.me();
+          localStorage.setItem('user', JSON.stringify(result.data.user));
+          navigate('/login-success');
+        } catch (err) {
+          setError('Failed to get user info after Google signup');
+        }
+      };
+      fetchUserAndRedirect();
+    } else if (googleAuthError === 'google_auth_failed') {
+      setError('Google authentication failed. Please try again.');
+    }
+  }, [searchParams, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

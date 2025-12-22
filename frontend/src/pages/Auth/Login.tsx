@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import styles from './Login.module.css';
 import { authApi } from '../../api/auth';
 import {
@@ -20,6 +20,31 @@ export default function Login() {
   const [error, setError] = useState('');
   const [showError, setShowError] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Handle Google OAuth callback
+  useEffect(() => {
+    const googleAuthSuccess = searchParams.get('google_auth');
+    const googleAuthError = searchParams.get('error');
+
+    if (googleAuthSuccess === 'success') {
+      // Google login successful, fetch user info and redirect
+      const fetchUserAndRedirect = async () => {
+        try {
+          const result = await authApi.me();
+          localStorage.setItem('user', JSON.stringify(result.data.user));
+          navigate('/login-success');
+        } catch (err) {
+          setError('Failed to get user info after Google login');
+          setShowError(true);
+        }
+      };
+      fetchUserAndRedirect();
+    } else if (googleAuthError === 'google_auth_failed') {
+      setError('Google authentication failed. Please try again.');
+      setShowError(true);
+    }
+  }, [searchParams, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

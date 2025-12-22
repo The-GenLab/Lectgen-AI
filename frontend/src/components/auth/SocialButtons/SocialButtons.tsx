@@ -1,5 +1,6 @@
 import { GoogleIcon } from '../icons';
 import styles from './SocialButtons.module.css';
+import { getGoogleAuthUrl } from '../../../api/auth';
 
 interface SocialButtonsProps {
   onGoogleClick?: () => void;
@@ -14,11 +15,20 @@ export default function SocialButtons({
 }: SocialButtonsProps) {
   const buttonText = variant === 'register' ? 'Sign up with Google' : 'Sign in with Google';
 
+  const handleGoogleClick = () => {
+    if (onGoogleClick) {
+      onGoogleClick();
+    } else {
+      // Redirect to backend Google OAuth endpoint
+      window.location.href = getGoogleAuthUrl();
+    }
+  };
+
   return (
     <button 
       className={styles.googleButton} 
       type="button" 
-      onClick={onGoogleClick}
+      onClick={handleGoogleClick}
       disabled={disabled}
     >
       <GoogleIcon />

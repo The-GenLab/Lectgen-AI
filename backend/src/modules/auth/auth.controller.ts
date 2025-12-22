@@ -1,5 +1,9 @@
 import { Request, Response } from 'express';
 import authService from './auth.service';
+import { send } from 'process';
+import { userService } from '../user';
+import { userRepository } from '../../core/repositories';
+import User from '../../core/models/User';
 
 // Cookie options for JWT token
 const COOKIE_OPTIONS = {
@@ -117,7 +121,9 @@ class AuthController {
   // hàm me dùng để check xem request hiện tại có user đăng nhập hợp lệ hay không và trả thông tin user đó
   async me(req: Request, res: Response) {
     try {
-      if (!req.user) {
+      const user = req.user as User | undefined;
+      
+      if (!user) {
         return res.status(401).json({
           success: false,
           message: 'Unauthorized',
@@ -128,13 +134,13 @@ class AuthController {
         success: true,
         data: {
           user: {
-            id: req.user.id,
-            email: req.user.email,
-            role: req.user.role,
-            slidesGenerated: req.user.slidesGenerated,
-            maxSlidesPerMonth: req.user.maxSlidesPerMonth,
-            subscriptionExpiresAt: req.user.subscriptionExpiresAt,
-            createdAt: req.user.createdAt,
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            slidesGenerated: user.slidesGenerated,
+            maxSlidesPerMonth: user.maxSlidesPerMonth,
+            subscriptionExpiresAt: user.subscriptionExpiresAt,
+            createdAt: user.createdAt,
           },
         },
       });
@@ -150,9 +156,9 @@ class AuthController {
   async refreshToken(req: Request, res: Response) {
     try {
       // Get token from cookie first, then fallback to Authorization header
-      const oldToken = req.cookies?.token || 
-        (req.headers.authorization?.startsWith('Bearer ') 
-          ? req.headers.authorization.substring(7) 
+      const oldToken = req.cookies?.token ||
+        (req.headers.authorization?.startsWith('Bearer ')
+          ? req.headers.authorization.substring(7)
           : null);
 
       if (!oldToken) {
@@ -208,14 +214,15 @@ class AuthController {
       }
 
       // Generate reset token and send email
-      await authService.forgotPassword(email);
+      const tokenReset = await authService.forgotPassword(email);
+      const resetLink = `http://localhost:5173/reset-password?token=${tokenReset}`;
+      await authService.sendEmailService(email, resetLink);
 
       return res.status(200).json({
         success: true,
         message: 'If the email exists, a password reset link has been sent',
       });
     } catch (error: any) {
-      // Don't reveal if email exists or not for security
       return res.status(200).json({
         success: true,
         message: 'If the email exists, a password reset link has been sent',
@@ -223,10 +230,38 @@ class AuthController {
     }
   }
 
+  // hàm validateResetToken dùng để kiểm tra token reset còn hợp lệ không
+  async validateResetToken(req: Request, res: Response) {
+    try {
+      const { token } = req.query as { token: string };
+
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: 'Token is required',
+        });
+      }
+
+      const result = await authService.validateResetToken(token);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Token is valid',
+        data: result,
+      });
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Invalid or expired token',
+      });
+    }
+  }
+
   // hàm resetPassword dùng để đặt lại mật khẩu với token
   async resetPassword(req: Request, res: Response) {
     try {
-      const { token, newPassword } = req.body;
+      const { newPassword } = req.body;
+      const {token} = req.query as { token: string };
 
       if (!token || !newPassword) {
         return res.status(400).json({
@@ -255,6 +290,25 @@ class AuthController {
       });
     }
   }
+   async googleCallback(req: Request, res: Response) {
+    try {
+      // Lay user tu req do passport cung cap
+      const userGoogle = req.user;
+      if (!userGoogle) {
+        throw new Error('Google authentication failed');
+      }
+      const userAndTokenResult = await authService.loginOrSignupGoogle(userGoogle);
+
+      // tra ve token trong cookie
+      res.cookie('token', userAndTokenResult.token, COOKIE_OPTIONS);
+
+      // chuyen huong ve frontend sau khi dang nhap thanh cong
+      return res.redirect(`${process.env.FRONTEND_URL}/login?google_auth=success`);
+    } catch (error) {
+      // Redirect to frontend with error indication
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=google_auth_failed`);
+    }
+}
 }
 
 export default new AuthController();
