@@ -7,6 +7,8 @@ import { Request, Response } from "express";
 import { errorResponse, successResponse } from "../../shared/utils";
 import { AIGenerationOptions } from "./types";
 import aiService from "./ai.service";
+import usageTrackingService from "../../shared/services/usageTracking.service";
+import { ActionStatus } from "../../core/models/UsageLog";
 
 class AIController {
   /**
@@ -84,6 +86,21 @@ class AIController {
         `[ AI Controller ] Generated ${result.slides.length} slides in ${duration} ms`,
       );
 
+      // Log usage for admin tracking
+      if (req.user) {
+        await usageTrackingService.logAIGeneration({
+          userId: req.user.id,
+          tokensUsed: 1500, // TODO: Get actual token count from Gemini response
+          durationMs: duration,
+          status: ActionStatus.SUCCESS,
+          metadata: {
+            model: "gemini-2.5-flash",
+            prompt: prompt.substring(0, 100),
+            slideCount: result.slides.length,
+          },
+        });
+      }
+
       // success response with metadata
       return successResponse(
         res,
@@ -101,6 +118,17 @@ class AIController {
       );
     } catch (error: any) {
       console.log("[ AI Controller ] Error generating slides:", error);
+
+      // Log failed usage
+      if (req.user) {
+        await usageTrackingService.logAIGeneration({
+          userId: req.user.id,
+          durationMs: Date.now() - (req as any).startTime || 0,
+          status: ActionStatus.FAILED,
+          errorMessage: error.message,
+        });
+      }
+
       return errorResponse(
         res,
         error.message || "Failed to generate slides",

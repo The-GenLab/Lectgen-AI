@@ -19,13 +19,18 @@ class UserRepository {
   }
 
   // Find all users with pagination
-  async findAll(limit: number = 50, offset: number = 0): Promise<{ users: User[]; total: number }> {
-    const { rows: users, count: total } = await User.findAndCountAll({
-      limit,
-      offset,
+  async findAll(options: { limit?: number; offset?: number } = {}): Promise<{ rows: User[]; count: number }> {
+    const { rows, count } = await User.findAndCountAll({
+      limit: options.limit || 50,
+      offset: options.offset || 0,
       order: [['createdAt', 'DESC']],
     });
-    return { users, total };
+    return { rows, count };
+  }
+
+  // Count all users
+  async countAll(): Promise<number> {
+    return await User.count();
   }
 
   // Find users by role
