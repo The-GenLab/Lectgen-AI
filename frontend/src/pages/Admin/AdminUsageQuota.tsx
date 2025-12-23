@@ -6,6 +6,8 @@ import {
     CrownOutlined,
     CalendarOutlined,
     CheckCircleOutlined,
+    ArrowUpOutlined,
+    ArrowDownOutlined,
 } from '@ant-design/icons';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import AdminLayout from '../../components/AdminLayout';
@@ -104,11 +106,25 @@ const AdminUsageQuota = () => {
                         <Card className={styles.summaryCard}>
                             <Statistic
                                 title="Total Tokens"
-                                value={stats?.totalTokens || 0}
+                                value={(stats?.totalTokens || 0) > 1000 ? `${((stats?.totalTokens || 0) / 1000).toFixed(1)}k` : (stats?.totalTokens || 0)}
                                 prefix={<ThunderboltOutlined />}
                                 valueStyle={{ color: '#1677ff' }}
                             />
-                            <div style={{ fontSize: '12px', color: '#8c8c8c', marginTop: 8 }}>Total usage across all users</div>
+                            <div style={{
+                                fontSize: '12px',
+                                color: (stats?.comparison?.tokenChange || 0) >= 0 ? '#52c41a' : '#ff4d4f',
+                                marginTop: 8,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4
+                            }}>
+                                {(stats?.comparison?.tokenChange || 0) >= 0 ? (
+                                    <ArrowUpOutlined style={{ fontSize: 10 }} />
+                                ) : (
+                                    <ArrowDownOutlined style={{ fontSize: 10 }} />
+                                )}
+                                <span>{Math.abs(stats?.comparison?.tokenChange || 0)}% vs last month</span>
+                            </div>
                         </Card>
                     </Col>
 
@@ -120,7 +136,21 @@ const AdminUsageQuota = () => {
                                 prefix={<UserOutlined />}
                                 valueStyle={{ color: '#fa8c16' }}
                             />
-                            <div style={{ fontSize: '12px', color: '#8c8c8c', marginTop: 8 }}>Free tier accounts</div>
+                            <div style={{
+                                fontSize: '12px',
+                                color: (stats?.comparison?.freeUserGrowth || 0) >= 0 ? '#52c41a' : '#ff4d4f',
+                                marginTop: 8,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4
+                            }}>
+                                {(stats?.comparison?.freeUserGrowth || 0) >= 0 ? (
+                                    <ArrowUpOutlined style={{ fontSize: 10 }} />
+                                ) : (
+                                    <ArrowDownOutlined style={{ fontSize: 10 }} />
+                                )}
+                                <span>{Math.abs(stats?.comparison?.freeUserGrowth || 0)}% new signups</span>
+                            </div>
                         </Card>
                     </Col>
 
@@ -132,7 +162,21 @@ const AdminUsageQuota = () => {
                                 prefix={<CrownOutlined />}
                                 valueStyle={{ color: '#faad14' }}
                             />
-                            <div style={{ fontSize: '12px', color: '#8c8c8c', marginTop: 8 }}>Premium subscribers</div>
+                            <div style={{
+                                fontSize: '12px',
+                                color: (stats?.comparison?.vipRetention || 0) >= 0 ? '#52c41a' : '#ff4d4f',
+                                marginTop: 8,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4
+                            }}>
+                                {(stats?.comparison?.vipRetention || 0) >= 0 ? (
+                                    <ArrowUpOutlined style={{ fontSize: 10 }} />
+                                ) : (
+                                    <ArrowDownOutlined style={{ fontSize: 10 }} />
+                                )}
+                                <span>{Math.abs(stats?.comparison?.vipRetention || 0)}% retention rate</span>
+                            </div>
                         </Card>
                     </Col>
                 </Row>

@@ -18,6 +18,11 @@ export interface GlobalStats {
         VIP: number;
         ADMIN: number;
     };
+    comparison?: {
+        tokenChange: number;
+        freeUserGrowth: number;
+        vipRetention: number;
+    };
     quotaStatus?: Array<{
         userName: string;
         used: number;
