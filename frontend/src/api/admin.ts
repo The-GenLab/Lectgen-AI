@@ -18,6 +18,18 @@ export interface GlobalStats {
         VIP: number;
         ADMIN: number;
     };
+    quotaStatus?: Array<{
+        userName: string;
+        used: number;
+        limit: number;
+        usagePercent: number;
+    }>;
+    vipMetrics?: {
+        activeVipUsers: number;
+        vipGenerationsToday: number;
+        avgResponseTime: number;
+        systemLoad: number;
+    };
 }
 
 export interface UserWithStats {

@@ -76,6 +76,88 @@
     color: white;
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     min-height: 300px;
+    border: none;
+}
+
+.vipCard :global(.ant-card-body) {
+    padding: 24px;
+}
+
+.vipHeader {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.vipIcon {
+    font-size: 24px;
+    color: #ffd700;
+    margin-right: 12px;
+}
+
+.vipTitle {
+    font-size: 20px;
+    font-weight: 600;
+    color: white;
+    margin: 0;
+}
+
+.vipDescription {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 14px;
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+.metricItem {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.metricTitle {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.metricValueLarge {
+    font-size: 20px;
+    font-weight: 600;
+    color: white;
+    display: flex;
+    align-items: center;
+}
+
+.vipFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.activeVips {
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.manageTiersBtn {
+    background: white;
+    color: #667eea;
+    border: none;
+    font-weight: 500;
+    border-radius: 6px;
+}
+
+.manageTiersBtn:hover {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: #667eea !important;
+    border: none !important;
 }
 
 .vipCard h3 {
@@ -97,4 +179,56 @@
     min-height: 200px;
     color: #a0aec0;
     font-size: 14px;
+}
+
+.quotaList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.quotaItem {
+    padding: 12px;
+    background: #f7fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.quotaUser {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.emptyState {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 150px;
+    color: #a0aec0;
+}
+
+.vipMetrics {
+    margin-bottom: 20px;
+}
+
+.metricBox {
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.metricValue {
+    font-size: 28px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 4px;
+}
+
+.metricLabel {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
 }

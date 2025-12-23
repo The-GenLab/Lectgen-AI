@@ -1,4 +1,4 @@
-import { usageLogRepository } from '../../core/repositories';
+import { usageLogRepository, userRepository } from '../../core/repositories';
 import { ActionType, ActionStatus } from '../../core/models/UsageLog';
 
 interface LogUsageParams {
@@ -55,6 +55,16 @@ class UsageTrackingService {
             errorMessage: params.errorMessage,
             metadata: params.metadata,
         });
+
+        // Increment user's slidesGenerated counter if successful
+        if (params.status === ActionStatus.SUCCESS) {
+            try {
+                await userRepository.incrementSlidesGenerated(params.userId);
+                console.log(`[UsageTracking] Incremented slidesGenerated for user ${params.userId}`);
+            } catch (error) {
+                console.error('[UsageTracking] Failed to increment slidesGenerated:', error);
+            }
+        }
     }
 
     /**

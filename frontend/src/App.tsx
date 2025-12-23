@@ -8,6 +8,7 @@ import Success from './pages/Auth/Success';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Profile from './pages/Profile/Profile';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import AdminUsageQuota from './pages/Admin/AdminUsageQuota';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -20,30 +21,10 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/login-success" element={<Success />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/" element={<ProtectedRoute> <Dashboard /> </ProtectedRoute> } />
+        <Route path="/profile" element={<ProtectedRoute> <Profile /> </ProtectedRoute> } />
+        <Route path="/admin" element={<ProtectedRoute> <AdminDashboard /> </ProtectedRoute> } />
+        <Route path="/admin/usage" element={<ProtectedRoute> <AdminUsageQuota /> </ProtectedRoute> } />
       </Routes>
     </BrowserRouter>
   );
