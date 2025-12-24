@@ -2,6 +2,7 @@
  * AI Service Type Definitions
  */
 
+import { title } from "process";
 import { z } from "zod";
 
 /**
@@ -52,10 +53,25 @@ export const SlideDataSchema = z.object({
 });
 
 /**
+ * Zod schemas for LaTeX Beamer output
+ */
+export const LatexSchema = z.object({
+  title: z.string().describe("The main presentation title"),
+
+  latex_code: z
+    .string()
+    .min(100, "LaTeX code too short")
+    .describe(
+      "The full LaTeX Beamer code for the presentation(start with \\documentclass)",
+    ),
+});
+
+/**
  * TypeScript types inferred from Zod schemas
  */
 export type Slide = z.infer<typeof SlideSchema>;
 export type SlideData = z.infer<typeof SlideDataSchema>;
+export type LatexData = z.infer<typeof LatexSchema>;
 
 /**
  * AI Generation Options
@@ -64,4 +80,5 @@ export interface AIGenerationOptions {
   temperature?: number;
   maxSlides?: number;
   style?: "professional" | "casual" | "academic";
+  outputFormat?: "json" | "latex";
 }

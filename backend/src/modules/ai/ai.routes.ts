@@ -15,4 +15,15 @@ router.post("/generate", aiController.generate);
  */
 router.post("/generate-with-retry", aiController.generateWithRetry);
 
+/**
+ * POST /api/ai/generate-latex
+ * Generate LaTeX Beamer presentation from text prompt
+ */
+router.post("/generate-latex", aiController.generateLatex);
+/**
+ * POST /api/ai/generate-latex-with-retry
+ * Generate LaTeX with automatic retry logic
+ */
+router.post("/generate-latex-with-retry", aiController.generateLatexWithRetry);
+
 export default router;
