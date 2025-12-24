@@ -34,8 +34,12 @@ export default function Login() {
           const result = await authApi.me();
           localStorage.setItem('user', JSON.stringify(result.data.user));
           navigate('/login-success');
-        } catch (err) {
-          setError('Failed to get user info after Google login');
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            setError(error.message);
+          } else {
+            setError('Failed to get user info after Google login');
+          }
           setShowError(true);
         }
       };

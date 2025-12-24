@@ -273,6 +273,13 @@ class AuthService {
         role: UserRole.FREE,
         maxSlidesPerMonth: QUOTA.FREE_USER_MAX_SLIDES,
       });
+    } else if (!user.googleId) {
+      // Nếu user đã tồn tại nhưng chưa có googleId, update googleId
+      await userRepository.update(user.id, {
+        googleId: googleUser.id,
+        avatarUrl: user.avatarUrl || googleUser.avatar,
+      });
+      user.googleId = googleUser.id;
     }
 
     // Tạo JWT token cho user

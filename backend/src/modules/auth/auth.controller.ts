@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import authService from './auth.service';
-import { send } from 'process';
 import { userService } from '../user';
 import { userRepository } from '../../core/repositories';
 import User from '../../core/models/User';
@@ -108,7 +107,6 @@ class AuthController {
             maxSlidesPerMonth: user.maxSlidesPerMonth,
           },
         },
-        token: token
       });
     } catch (error: any) {
       return res.status(401).json({
@@ -215,7 +213,7 @@ class AuthController {
 
       // Generate reset token and send email
       const tokenReset = await authService.forgotPassword(email);
-      const resetLink = `http://localhost:5173/reset-password?token=${tokenReset}`;
+      const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${tokenReset}`;
       await authService.sendEmailService(email, resetLink);
 
       return res.status(200).json({

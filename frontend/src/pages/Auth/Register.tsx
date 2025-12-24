@@ -36,8 +36,12 @@ export default function Register() {
           const result = await authApi.me();
           localStorage.setItem('user', JSON.stringify(result.data.user));
           navigate('/login-success');
-        } catch (err) {
-          setError('Failed to get user info after Google signup');
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            setError(error.message);
+          } else {
+            setError('Failed to get user info after Google signup');
+          }
         }
       };
       fetchUserAndRedirect();
@@ -182,7 +186,10 @@ export default function Register() {
                   placeholder="name@example.com"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) setError('');
+                  }}
                   disabled={loading}
                 />
                 <div className={styles.registerInputIcon}>
@@ -200,7 +207,10 @@ export default function Register() {
                   placeholder="••••••••"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (error) setError('');
+                  }}
                   disabled={loading}
                 />
                 <div 
@@ -210,7 +220,7 @@ export default function Register() {
                   {showPassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
                 </div>
               </div>
-              <p className={styles.registerInputHint}>Must be at least 8 characters</p>
+              <p className={styles.registerInputHint}>Must be at least 12 characters</p>
             </label>
 
             {/* Submit Button */}
