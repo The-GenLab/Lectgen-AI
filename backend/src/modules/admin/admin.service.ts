@@ -1,8 +1,31 @@
 import { userRepository, usageLogRepository } from '../../core/repositories';
 import { ActionType, ActionStatus } from '../../core/models/UsageLog';
 import { UserRole } from '../../shared/constants/enums';
+import * as os from 'os';
 
 class AdminService {
+  /**
+   * lấy CPU load hiện tại của hệ thống
+   */
+  private getSystemLoad(): number {
+    const cpus = os.cpus();
+    let totalIdle = 0;
+    let totalTick = 0;
+
+    cpus.forEach(cpu => {
+      for (const type in cpu.times) {
+        totalTick += cpu.times[type as keyof typeof cpu.times];
+      }
+      totalIdle += cpu.times.idle;
+    });
+
+    const idle = totalIdle / cpus.length;
+    const total = totalTick / cpus.length;
+    const usage = 100 - ~~(100 * idle / total);
+
+    return Math.min(Math.max(usage, 0), 100); // giới hạn giá trị 0 - 100
+  }
+
   /**
    * Get global system statistics
    */
@@ -12,19 +35,19 @@ class AdminService {
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
-    // Current month stats
+    // Lấy thống kê sử dụng và người dùng
     const usageStats = await usageLogRepository.getGlobalStats(currentMonthStart, now);
     const userStats = await userRepository.getStatistics();
 
-    // Last month stats for comparison
+    // So sánh với thời gian trước đó
     const lastMonthStats = await usageLogRepository.getGlobalStats(lastMonthStart, lastMonthEnd);
 
-    // Calculate percentage changes
+    // Tính tỉ lệ thay đổi
     const tokenChange = lastMonthStats.totalTokens > 0
       ? Number((((usageStats.totalTokens - lastMonthStats.totalTokens) / lastMonthStats.totalTokens) * 100).toFixed(1))
       : 0;
 
-    // Count new FREE users this month
+    // Đếm số user free mới trong tháng 
     const allFreeUsers = await userRepository.findByRole(UserRole.FREE);
     const newFreeUsersThisMonth = allFreeUsers.filter(user => {
       const createdAt = new Date(user.createdAt);
@@ -34,11 +57,22 @@ class AdminService {
       ? Number(((newFreeUsersThisMonth / allFreeUsers.length) * 100).toFixed(1))
       : 0;
 
-    // VIP retention (users active this month vs last month)
+    // Tỉ lệ ở lại của user vip (tức là không hủy sub trong tháng)
     const vipUsers = await userRepository.findByRole(UserRole.VIP);
-    const vipRetention = vipUsers.length > 0 ? Number((Math.random() * 3 + 1).toFixed(1)) : 0; // Simplified for now
+    const vipUsersWithSubscription = vipUsers.filter(user => user.subscriptionExpiresAt !== null);
+    const totalVipWithSub = vipUsersWithSubscription.length;
 
-    // Get quota status for free users
+    // Đếm VIP users còn subscription active (chưa hết hạn)
+    const activeVipUsers = vipUsersWithSubscription.filter(user => {
+      return new Date(user.subscriptionExpiresAt!) > now;
+    });
+
+    const vipRetention = totalVipWithSub > 0
+      ? Number((activeVipUsers.length / totalVipWithSub * 100).toFixed(1))
+      : 0;
+
+
+    // Lấy status quota của top 5 user free dùng nhiều nhất
     const topFreeUsers = allFreeUsers
       .sort((a, b) => b.slidesGenerated - a.slidesGenerated)
       .slice(0, 5);
@@ -50,21 +84,21 @@ class AdminService {
       usagePercent: Math.round((user.slidesGenerated / user.maxSlidesPerMonth) * 100)
     }));
 
-    // Get VIP metrics
+    // Chỉ số của users vip
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Get VIP generations today by querying usage logs
+    // Đếm số lần tạo slide của user vip trong ngày hôm nay
     const todayLogs = await usageLogRepository.findAll({
       startDate: todayStart,
       endDate: now
     });
 
-    const vipUserIds = new Set(vipUsers.map(u => u.id));
+    const vipUserIds = new Set(vipUsersWithSubscription.map(u => u.id));
     const vipGenerationsToday = todayLogs.rows.filter(log =>
       vipUserIds.has(log.userId) && log.actionType === ActionType.AI_GENERATION
     ).length;
 
-    // Calculate average response time for VIP users (last 7 days)
+    // Tính thời gian phản hồi trung bình của user vip trong 7 ngày qua
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const recentLogs = await usageLogRepository.findAll({
       startDate: sevenDaysAgo,
@@ -87,7 +121,7 @@ class AdminService {
       activeVipUsers: vipUsers.length,
       vipGenerationsToday: vipGenerationsToday || 0,
       avgResponseTime: avgResponseTime,
-      systemLoad: Math.floor(Math.random() * 40) + 20 // Mock 20-60% (need system metrics integration)
+      systemLoad: this.getSystemLoad() 
     };
 
     return {
@@ -109,7 +143,7 @@ class AdminService {
   }
 
   /**
-   * Get all users with their quotas and stats
+   * Lấy tất cả user với quota và stats
    */
   async getAllUsers(options: { limit?: number; offset?: number }) {
     const { rows: users, count } = await userRepository.findAll({
@@ -117,7 +151,7 @@ class AdminService {
       offset: options.offset || 0,
     });
 
-    // Get stats for each user
+    // Lấy stats cho từng user
     const usersWithStats = await Promise.all(
       users.map(async (user) => {
         const stats = await usageLogRepository.getUserStats(user.id);
@@ -148,7 +182,7 @@ class AdminService {
   }
 
   /**
-   * Get detailed stats for a specific user
+   * Lấy thống kê chi tiết cho 1 user cụ thể theo userId
    */
   async getUserStats(userId: string, startDate?: Date, endDate?: Date) {
     const user = await userRepository.findById(userId);
@@ -174,7 +208,7 @@ class AdminService {
   }
 
   /**
-   * Get usage logs with filters
+   * Lấy logs sử dụng với các bộ lọc
    */
   async getUsageLogs(options: {
     userId?: string;
@@ -189,7 +223,7 @@ class AdminService {
   }
 
   /**
-   * Update user quota
+   * Câp nhật quota của user
    */
   async updateUserQuota(userId: string, maxSlidesPerMonth: number) {
     const user = await userRepository.findById(userId);
@@ -205,7 +239,7 @@ class AdminService {
   }
 
   /**
-   * Update user role
+   * Cập nhật role của user
    */
   async updateUserRole(userId: string, role: string) {
     const user = await userRepository.findById(userId);

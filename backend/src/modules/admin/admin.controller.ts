@@ -6,7 +6,7 @@ import { ActionType, ActionStatus } from '../../core/models/UsageLog';
 class AdminController {
     /**
      * GET /api/admin/stats
-     * Get global system statistics
+     * Lấy thống kê tổng quan của hệ thống
      */
     
     async getGlobalStats(req: Request, res: Response) {
@@ -26,7 +26,7 @@ class AdminController {
 
     /**
      * GET /api/admin/users
-     * Get all users with their quotas and stats
+     * Lấy tất cả quotas và stats của users
      */
     async getAllUsers(req: Request, res: Response) {
         try {
@@ -43,7 +43,7 @@ class AdminController {
 
     /**
      * GET /api/admin/users/:userId/stats
-     * Get detailed stats for a specific user
+     * Lấy thống kê chi tiết cho 1 user cụ thể theo userId
      */
     async getUserStats(req: Request, res: Response) {
         try {
@@ -64,7 +64,7 @@ class AdminController {
 
     /**
      * GET /api/admin/usage-logs
-     * Get usage logs with filters
+     * Lấy logs sử dụng theo bộ lọc.
      */
     async getUsageLogs(req: Request, res: Response) {
         try {
@@ -88,7 +88,7 @@ class AdminController {
 
     /**
      * PATCH /api/admin/users/:userId/quota
-     * Update user quota
+     * Cập nhật quota của user
      */
     async updateUserQuota(req: Request, res: Response) {
         try {
@@ -109,7 +109,7 @@ class AdminController {
 
     /**
      * PATCH /api/admin/users/:userId/role
-     * Update user role
+     * Cập nhật role của user
      */
     async updateUserRole(req: Request, res: Response) {
         try {

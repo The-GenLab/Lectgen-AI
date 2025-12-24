@@ -9,22 +9,17 @@ const router = Router();
 router.use(authenticate);
 router.use(authorize(UserRole.ADMIN));
 
-// GET /api/admin/stats - Get global system statistics
+// GET /api/admin/stats
 router.get('/stats', adminController.getGlobalStats);
-
-// GET /api/admin/users - Get all users with their quotas and stats
+// GET /api/admin/users 
 router.get('/users', adminController.getAllUsers);
-
-// GET /api/admin/users/:userId/stats - Get detailed stats for a specific user
+// GET /api/admin/users/:userId/stats
 router.get('/users/:userId/stats', adminController.getUserStats);
-
-// GET /api/admin/usage-logs - Get usage logs with filters
+// GET /api/admin/usage-logs 
 router.get('/usage-logs', adminController.getUsageLogs);
-
-// PATCH /api/admin/users/:userId/quota - Update user quota
+// PATCH /api/admin/users/:userId/quota
 router.patch('/users/:userId/quota', adminController.updateUserQuota);
-
-// PATCH /api/admin/users/:userId/role - Update user role
+// PATCH /api/admin/users/:userId/role
 router.patch('/users/:userId/role', adminController.updateUserRole);
 
 export default router;

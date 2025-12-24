@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Row, Col, Statistic, message, Spin, Button } from 'antd';
 import {
     UserOutlined,
@@ -16,6 +17,7 @@ import type { GlobalStats } from '../../api/admin';
 import styles from './AdminUsageQuota.module.css';
 
 const AdminUsageQuota = () => {
+    const navigate = useNavigate();
     const [stats, setStats] = useState<GlobalStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -262,7 +264,7 @@ const AdminUsageQuota = () => {
                     <Col xs={24} lg={12}>
                         <Card
                             title="Free Tier Quota Watch"
-                            extra={<a href="#">View All</a>}
+                            extra={<a onClick={() => navigate('/admin/users')} style={{ cursor: 'pointer' }}>View All</a>}
                             className={styles.chartCard}
                             style={{ height: '100%', minHeight: 380 }}
                         >
