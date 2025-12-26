@@ -2,9 +2,11 @@ import sequelize from '../config/database';
 import User from './User';
 import Conversation from './Conversation';
 import Message from './Message';
+import Session from './Session';
+import OAuthState from './OAuthState';
 
 // Export all models
-export { User, Conversation, Message };
+export { User, Conversation, Message, Session, OAuthState };
 
 // Sync database (development only)
 export const syncDatabase = async (force: boolean = false) => {

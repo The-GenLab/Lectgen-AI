@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Profile.module.css';
-import { getCurrentUser } from '../../utils/auth';
+import { useAuth } from '../../context/AuthContext';
 import { getAvatarUrl } from '../../utils/file';
 import * as userApi from '../../api/user';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
-  const currentUser = getCurrentUser();
+  const { user: currentUser, accessToken } = useAuth();
   
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
@@ -59,28 +59,29 @@ const Profile: React.FC = () => {
       return;
     }
 
+    if (!accessToken) {
+      setError('Phiên đăng nhập đã hết hạn');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
 
     try {
       // Upload avatar if changed
-      let newAvatarUrl = currentUser.avatarUrl;
+      let newAvatarUrl = currentUser?.avatarUrl;
       if (avatarFile) {
-        const avatarResponse = await userApi.uploadAvatar(avatarFile);
+        const avatarResponse = await userApi.uploadAvatar(avatarFile, accessToken);
         if (avatarResponse.success) {
           newAvatarUrl = avatarResponse.data.avatarUrl;
         }
       }
 
       // Update profile name
-      const response = await userApi.updateProfile({ name: name.trim() });
+      const response = await userApi.updateProfile({ name: name.trim() }, accessToken);
       
       if (response.success) {
-        // Update localStorage
-        const updatedUser = { ...currentUser, name: name.trim(), avatarUrl: newAvatarUrl };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        
         setSuccessMessage('Đã lưu thay đổi');
         
         // Redirect back to dashboard after 1 second

@@ -12,6 +12,8 @@ export interface User {
   id: string;
   email: string;
   role: string;
+  name?: string;
+  avatarUrl?: string;
   slidesGenerated: number;
   maxSlidesPerMonth: number;
   subscriptionExpiresAt?: string;
@@ -23,11 +25,23 @@ export interface AuthResponse {
   message: string;
   data: {
     user: User;
+    accessToken: string;
   };
+  csrfToken: string;
+}
+
+export interface RefreshResponse {
+  success: boolean;
+  message: string;
+  data: {
+    accessToken: string;
+  };
+  csrfToken: string;
 }
 
 export interface MeResponse {
   success: boolean;
+  message?: string;
   data: {
     user: User;
   };
@@ -42,8 +56,41 @@ export interface ErrorResponse {
   message: string;
 }
 
+const getCsrfToken = (): string | null => {
+  const match = document.cookie.match(/csrfToken=([^;]+)/);
+  return match ? match[1] : null;
+};
+
+const createHeaders = (accessToken?: string | null, includeContentType: boolean = true): HeadersInit => {
+  const headers: HeadersInit = {};
+  
+  if (includeContentType) {
+    headers['Content-Type'] = 'application/json';
+  }
+  
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+  
+  return headers;
+};
+
+const createCsrfHeaders = (includeContentType: boolean = true): HeadersInit => {
+  const headers: HeadersInit = {};
+  
+  if (includeContentType) {
+    headers['Content-Type'] = 'application/json';
+  }
+  
+  const csrfToken = getCsrfToken();
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken;
+  }
+  
+  return headers;
+};
+
 export const authApi = {
-  // Check if email already exists
   async checkEmail(email: string): Promise<CheckEmailResponse> {
     const response = await fetch(`${API_URL}/auth/check-email`, {
       method: 'POST',
@@ -63,98 +110,97 @@ export const authApi = {
     return result.data;
   },
 
-  // Register new user
-  async register(data: RegisterRequest): Promise<AuthResponse> {
+  async register(data: RegisterRequest): Promise<{ accessToken: string; user: User }> {
     const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: createHeaders(null, true),
       body: JSON.stringify(data),
-      credentials: 'include', // Include cookies
+      credentials: 'include', // Include cookies for refresh token
     });
 
-    const result = await response.json();
+    const result: AuthResponse = await response.json();
 
     if (!response.ok) {
       throw new Error(result.message || 'Registration failed');
     }
 
-    return result;
+    return {
+      accessToken: result.data.accessToken,
+      user: result.data.user,
+    };
   },
 
-  // Login user
-  async login(data: RegisterRequest): Promise<AuthResponse> {
+  async login(data: RegisterRequest): Promise<{ accessToken: string; user: User }> {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: createHeaders(null, true),
       body: JSON.stringify(data),
-      credentials: 'include', // Include cookies
+      credentials: 'include', // Include cookies for refresh token
     });
 
-    const result = await response.json();
+    const result: AuthResponse = await response.json();
 
     if (!response.ok) {
       throw new Error(result.message || 'Login failed');
     }
 
-    return result;
+    return {
+      accessToken: result.data.accessToken,
+      user: result.data.user,
+    };
   },
 
-  // Get current user info (protected route)
-  async me(): Promise<MeResponse> {
+  async me(accessToken: string): Promise<User> {
     const response = await fetch(`${API_URL}/auth/me`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include', // Include cookies
+      headers: createHeaders(accessToken, true),
+      credentials: 'include',
     });
 
-    const result = await response.json();
+    const result: MeResponse = await response.json();
 
     if (!response.ok) {
       throw new Error(result.message || 'Failed to get user');
     }
 
-    return result;
+    return result.data.user;
   },
 
-  // Refresh token
-  async refreshToken(): Promise<{ success: boolean; message: string }> {
+  // Refresh with token rotation
+  async refresh(): Promise<{ accessToken: string; user: User }> {
     const response = await fetch(`${API_URL}/auth/refresh`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include', // Include cookies
+      headers: createCsrfHeaders(true),
+      credentials: 'include', // Include cookies for refresh token
     });
 
-    const result = await response.json();
+    const result: RefreshResponse = await response.json();
 
     if (!response.ok) {
       throw new Error(result.message || 'Token refresh failed');
     }
 
-    return result;
+    // Get user info with new access token
+    const user = await this.me(result.data.accessToken);
+
+    return {
+      accessToken: result.data.accessToken,
+      user,
+    };
   },
 
-  // Logout user
+  // Logout - requires CSRF
   async logout(): Promise<{ success: boolean; message: string }> {
     const response = await fetch(`${API_URL}/auth/logout`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include', // Include cookies
+      headers: createCsrfHeaders(true),
+      credentials: 'include',
     });
 
     const result = await response.json();
 
     // Clear local storage
-    localStorage.removeItem('user');
+    localStorage.removeItem('userHint');
 
     if (!response.ok) {
       throw new Error(result.message || 'Logout failed');
@@ -163,19 +209,10 @@ export const authApi = {
     return result;
   },
 
-  // Helper: Check if user is authenticated (by calling /me endpoint)
-  async isAuthenticated(): Promise<boolean> {
-    try {
-      await this.me();
-      return true;
-    } catch {
-      return false;
-    }
-  },
-
-  // Helper: Get stored user from localStorage (for quick access without API call)
-  getStoredUser(): User | null {
-    const userStr = localStorage.getItem('user');
+  // Helper: Get stored user hint from localStorage (for quick non-auth checks)
+  // DO NOT use for authentication - only for UI hints
+  getStoredUserHint(): { email: string; role: string } | null {
+    const userStr = localStorage.getItem('userHint');
     if (!userStr) return null;
     try {
       return JSON.parse(userStr);

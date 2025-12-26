@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import styles from './Login.module.css';
 import { authApi } from '../../api/auth';
+import { useAuth } from '../../context/AuthContext';
 import {
   AuthHeader,
   AuthFooter,
@@ -21,34 +22,39 @@ export default function Login() {
   const [showError, setShowError] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { setAuth, refreshAuth } = useAuth();
 
   // Handle Google OAuth callback
   useEffect(() => {
-    const googleAuthSuccess = searchParams.get('google_auth');
+    const googleAuthSuccess = searchParams.get('success');
     const googleAuthError = searchParams.get('error');
 
-    if (googleAuthSuccess === 'success') {
-      // Google login successful, fetch user info and redirect
-      const fetchUserAndRedirect = async () => {
+    if (googleAuthSuccess === 'true') {
+      // Google login successful, refresh to get tokens from cookies
+      const handleGoogleAuth = async () => {
         try {
-          const result = await authApi.me();
-          localStorage.setItem('user', JSON.stringify(result.data.user));
-          navigate('/login-success');
+          const success = await refreshAuth();
+          if (success) {
+            navigate('/login-success');
+          } else {
+            setError('Failed to complete Google authentication');
+            setShowError(true);
+          }
         } catch (error: unknown) {
           if (error instanceof Error) {
             setError(error.message);
           } else {
-            setError('Failed to get user info after Google login');
+            setError('Failed to complete Google authentication');
           }
           setShowError(true);
         }
       };
-      fetchUserAndRedirect();
+      handleGoogleAuth();
     } else if (googleAuthError === 'google_auth_failed') {
       setError('Google authentication failed. Please try again.');
       setShowError(true);
     }
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, refreshAuth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,10 +66,10 @@ export default function Login() {
     setShowError(false);
 
     try {
-      const result = await authApi.login({ email, password });
+      const { accessToken, user } = await authApi.login({ email, password });
 
-      // Save user info to localStorage (token is stored in HTTP-only cookie)
-      localStorage.setItem('user', JSON.stringify(result.data.user));
+      // Store access token in memory via context (not localStorage)
+      setAuth(accessToken, user);
 
       // Redirect to success page (shows loading animation then redirects to dashboard)
       navigate('/login-success');

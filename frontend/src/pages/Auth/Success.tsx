@@ -2,20 +2,33 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styles from './Success.module.css';
 import { AuthHeader, CheckIcon } from '../../components/auth';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Success() {
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
+  const { user, accessToken } = useAuth();
 
   useEffect(() => {
+    // If no user/token, redirect back to login
+    // This handles the case where someone directly navigates to /login-success
+    if (!user && !accessToken) {
+      navigate('/login', { replace: true });
+      return;
+    }
+
     // Simulate loading progress
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
           clearInterval(interval);
-          // Redirect to dashboard after loading complete
+          // Redirect based on user role after loading complete
           setTimeout(() => {
-            navigate('/');
+            if (user?.role === 'admin') {
+              navigate('/admin', { replace: true });
+            } else {
+              navigate('/', { replace: true });
+            }
           }, 500);
           return 100;
         }
@@ -24,7 +37,7 @@ export default function Success() {
     }, 300);
 
     return () => clearInterval(interval);
-  }, [navigate]);
+  }, [navigate, user, accessToken]);
 
   const displayProgress = Math.min(Math.round(progress), 100);
 

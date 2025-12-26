@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Dashboard.module.css';
-import { logout } from '../../utils/auth';
+import { useAuth } from '../../context/AuthContext';
+import { authApi } from '../../api/auth';
 import PDFPreview from '../../components/PDFPreview';
-import { getUserPDFs } from '../../api/pdf';
-import { getProfile } from '../../api/user';
 import type { PDFDocument } from '../../api/pdf';
 import { getAvatarUrl } from '../../utils/file';
 
@@ -12,68 +11,33 @@ export default function Dashboard() {
   const [input, setInput] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [pdfs, setPdfs] = useState<PDFDocument[]>([]);
-  const [isLoadingPDFs, setIsLoadingPDFs] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { user, clearAuth } = useAuth();
 
-  // Fetch user profile on mount
+  // Load mock PDFs for now - TODO: Implement real PDF fetching with accessToken
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await getProfile();
-        if (response.success) {
-          setUser(response.data.user); // Fix: response.data.user chứ không phải response.data
-        }
-      } catch (error) {
-        console.error('Failed to fetch user:', error);
-        // Redirect to login if unauthorized
-        logout();
-      } finally {
-        setIsLoadingUser(false);
+    // Mock data for development
+    setPdfs([
+      {
+        id: 'pdf-1',
+        conversationId: 'conv-123',
+        fileName: 'Bài giảng Machine Learning.pdf',
+        fileUrl: 'https://example.com/lecture-1.pdf',
+        fileSize: 1024000,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'pdf-2',
+        conversationId: 'conv-456',
+        fileName: 'Giới thiệu về AI và Deep Learning.pdf',
+        fileUrl: 'https://example.com/lecture-2.pdf',
+        fileSize: 2048000,
+        createdAt: new Date(Date.now() - 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 86400000).toISOString(),
       }
-    };
-
-    fetchUser();
-  }, []);
-
-  // Fetch user's PDFs on mount
-  useEffect(() => {
-    const fetchPDFs = async () => {
-      setIsLoadingPDFs(true);
-      try {
-        const data = await getUserPDFs();
-        setPdfs(data);
-      } catch (error) {
-        console.error('Failed to fetch PDFs:', error);
-        // Fall back to mock data for development
-        setPdfs([
-          {
-            id: 'pdf-1',
-            conversationId: 'conv-123',
-            fileName: 'Bài giảng Machine Learning.pdf',
-            fileUrl: 'https://example.com/lecture-1.pdf',
-            fileSize: 1024000,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: 'pdf-2',
-            conversationId: 'conv-456',
-            fileName: 'Giới thiệu về AI và Deep Learning.pdf',
-            fileUrl: 'https://example.com/lecture-2.pdf',
-            fileSize: 2048000,
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            updatedAt: new Date(Date.now() - 86400000).toISOString(),
-          }
-        ]);
-      } finally {
-        setIsLoadingPDFs(false);
-      }
-    };
-
-    fetchPDFs();
+    ]);
   }, []);
   
   const handleSubmit = () => {
@@ -82,8 +46,15 @@ export default function Dashboard() {
     console.log('Send message:', input);
   };
 
-  const handleLogout = () => {
-    logout(); // Hàm logout đã có window.location.href, không cần navigate
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      clearAuth();
+      navigate('/login');
+    }
   };
 
   // Close menu when clicking outside
@@ -103,15 +74,9 @@ export default function Dashboard() {
     };
   }, [showUserMenu]);
 
-  // Show loading state
-  if (isLoadingUser || !user) {
-    return (
-      <div className={styles.container}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-          Loading...
-        </div>
-      </div>
-    );
+  // User comes from AuthContext via ProtectedRoute, no need to check loading
+  if (!user) {
+    return null; // ProtectedRoute will handle redirect
   }
 
   return (

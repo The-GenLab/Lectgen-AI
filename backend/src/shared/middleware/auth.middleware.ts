@@ -3,7 +3,7 @@ import authService from '../../modules/auth/auth.service';
 import User from '../../core/models/User';
 import { UserRole } from '../constants';
 
-// Extend Express Request type to include user
+// Mở rộng kiểu Express Request để bao gồm user
 declare global {
   namespace Express {
     interface Request {
@@ -12,39 +12,42 @@ declare global {
   }
 }
 
-// Authenticate middleware
+// Middleware xác thực - kiểm tra access token từ Authorization header
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Get token from cookie first, then fallback to Authorization header
-    let token = req.cookies?.token;
-
-    if (!token) {
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7);
-      }
-    }
-
-    if (!token) {
+    // Lấy access token chỉ từ Authorization header (KHÔNG lấy từ cookies)
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
-        message: 'No token provided',
+        message: 'No access token provided',
       });
     }
 
-    const user = await authService.getUserFromToken(token);
+    const accessToken = authHeader.substring(7);
+
+    if (!accessToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'No access token provided',
+      });
+    }
+
+    // Xác thực access token và lấy thông tin user
+    const user = await authService.getUserFromAccessToken(accessToken);
     req.user = user;
 
     next();
   } catch (error: any) {
     return res.status(401).json({
       success: false,
-      message: error.message || 'Invalid token',
+      message: error.message || 'Invalid or expired access token',
     });
   }
 };
 
-// Check user role
+// Kiểm tra quyền user
 export const authorize = (...roles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
@@ -65,8 +68,8 @@ export const authorize = (...roles: UserRole[]) => {
   };
 };
 
-// Admin only middleware
+// Middleware chỉ dành cho Admin
 export const adminOnly = authorize(UserRole.ADMIN);
 
-// VIP or Admin middleware
+// Middleware cho VIP hoặc Admin
 export const vipOrAdmin = authorize(UserRole.VIP, UserRole.ADMIN);

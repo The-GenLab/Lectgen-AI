@@ -3,18 +3,40 @@ import authService from './auth.service';
 import { userService } from '../user';
 import { userRepository } from '../../core/repositories';
 import User from '../../core/models/User';
+import { generateCsrfToken, clearCsrfToken } from '../../shared/middleware';
 
-// Cookie options for JWT token
-const COOKIE_OPTIONS = {
-  httpOnly: true, // Prevents JavaScript access (XSS protection)
-  secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-  sameSite: 'lax' as const, // CSRF protection
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+const REFRESH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict' as const,
+  maxAge: 30 * 24 * 60 * 60 * 1000,
   path: '/',
 };
 
+const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
+  res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
+};
+
+const clearRefreshTokenCookie = (res: Response) => {
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict' as const,
+    path: '/',
+  });
+};
+
+const sanitizeUser = (user: User) => ({
+  id: user.id,
+  email: user.email,
+  role: user.role,
+  slidesGenerated: user.slidesGenerated,
+  maxSlidesPerMonth: user.maxSlidesPerMonth,
+  subscriptionExpiresAt: user.subscriptionExpiresAt,
+  createdAt: user.createdAt,
+});
+
 class AuthController {
-  //hàm checkEmail dùng để kiểm tra email đã tồn tại trong hệ thống hay chưa
   async checkEmail(req: Request, res: Response) {
     try {
       const { email } = req.body;
@@ -40,7 +62,6 @@ class AuthController {
     }
   }
 
-  // hàm register dùng để đăng ký tài khoản mới và trả về token đăng nhập ngay sau khi đăng ký
   async register(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
@@ -52,23 +73,29 @@ class AuthController {
         });
       }
 
-      const { user, token } = await authService.register({ email, password });
+      const userAgent = req.get('user-agent') || null;
+      const ip = req.ip || null;
 
-      // Set token in HTTP-only cookie
-      res.cookie('token', token, COOKIE_OPTIONS);
+      const { user, accessToken, refreshToken } = await authService.register(
+        { email, password },
+        userAgent,
+        ip
+      );
+
+      // Set refresh token in HTTP-only cookie
+      setRefreshTokenCookie(res, refreshToken);
+
+      // Generate CSRF token
+      const csrfToken = generateCsrfToken(res);
 
       return res.status(201).json({
         success: true,
         message: 'User registered successfully',
         data: {
-          user: {
-            id: user.id,
-            email: user.email,
-            role: user.role,
-            slidesGenerated: user.slidesGenerated,
-            maxSlidesPerMonth: user.maxSlidesPerMonth,
-          },
+          user: sanitizeUser(user),
+          accessToken, // Return access token in response body
         },
+        csrfToken, // Return CSRF token for frontend to store
       });
     } catch (error: any) {
       return res.status(400).json({
@@ -78,7 +105,6 @@ class AuthController {
     }
   }
 
-  // hàm login dùng để xác thực email + password, nếu đúng thì cho đăng nhập và trả về token
   async login(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
@@ -90,23 +116,29 @@ class AuthController {
         });
       }
 
-      const { user, token } = await authService.login({ email, password });
+      const userAgent = req.get('user-agent') || null;
+      const ip = req.ip || null;
 
-      // Set token in HTTP-only cookie
-      res.cookie('token', token, COOKIE_OPTIONS);
+      const { user, accessToken, refreshToken } = await authService.login(
+        { email, password },
+        userAgent,
+        ip
+      );
+
+      // Set refresh token in HTTP-only cookie
+      setRefreshTokenCookie(res, refreshToken);
+
+      // Generate CSRF token
+      const csrfToken = generateCsrfToken(res);
 
       return res.status(200).json({
         success: true,
         message: 'Login successful',
         data: {
-          user: {
-            id: user.id,
-            email: user.email,
-            role: user.role,
-            slidesGenerated: user.slidesGenerated,
-            maxSlidesPerMonth: user.maxSlidesPerMonth,
-          },
+          user: sanitizeUser(user),
+          accessToken, // Return access token in response body
         },
+        csrfToken, // Return CSRF token for frontend to store
       });
     } catch (error: any) {
       return res.status(401).json({
@@ -116,7 +148,6 @@ class AuthController {
     }
   }
 
-  // hàm me dùng để check xem request hiện tại có user đăng nhập hợp lệ hay không và trả thông tin user đó
   async me(req: Request, res: Response) {
     try {
       const user = req.user as User | undefined;
@@ -131,15 +162,7 @@ class AuthController {
       return res.status(200).json({
         success: true,
         data: {
-          user: {
-            id: user.id,
-            email: user.email,
-            role: user.role,
-            slidesGenerated: user.slidesGenerated,
-            maxSlidesPerMonth: user.maxSlidesPerMonth,
-            subscriptionExpiresAt: user.subscriptionExpiresAt,
-            createdAt: user.createdAt,
-          },
+          user: sanitizeUser(user),
         },
       });
     } catch (error: any) {
@@ -150,32 +173,45 @@ class AuthController {
     }
   }
 
-  // hàm refreshToken dùng để làm mới token khi token cũ sắp hết hạn hoặc đã hết hạn
+  // Refresh with token rotation
   async refreshToken(req: Request, res: Response) {
     try {
-      // Get token from cookie first, then fallback to Authorization header
-      const oldToken = req.cookies?.token ||
-        (req.headers.authorization?.startsWith('Bearer ')
-          ? req.headers.authorization.substring(7)
-          : null);
+      // Get refresh token from cookie
+      const refreshToken = req.cookies?.refreshToken;
 
-      if (!oldToken) {
+      if (!refreshToken) {
         return res.status(401).json({
           success: false,
-          message: 'No token provided',
+          message: 'No refresh token provided',
         });
       }
 
-      const newToken = await authService.refreshToken(oldToken);
+      const userAgent = req.get('user-agent') || null;
+      const ip = req.ip || null;
 
-      // Set new token in cookie
-      res.cookie('token', newToken, COOKIE_OPTIONS);
+      // Rotate refresh token and get new access token
+      const { accessToken, refreshToken: newRefreshToken } = 
+        await authService.refreshAccessToken(refreshToken, userAgent, ip);
+
+      // Set new refresh token in cookie
+      setRefreshTokenCookie(res, newRefreshToken);
+
+      // Rotate CSRF token as well
+      const csrfToken = generateCsrfToken(res);
 
       return res.status(200).json({
         success: true,
         message: 'Token refreshed successfully',
+        data: {
+          accessToken, // Return new access token in response body
+        },
+        csrfToken, // Return new CSRF token
       });
     } catch (error: any) {
+      // Clear cookies on error
+      clearRefreshTokenCookie(res);
+      clearCsrfToken(res);
+      
       return res.status(401).json({
         success: false,
         message: error.message || 'Token refresh failed',
@@ -183,23 +219,41 @@ class AuthController {
     }
   }
 
-  // hàm logout dùng để kết thúc phiên đăng nhập – xóa cookie token
+  // Logout - no authentication required
   async logout(req: Request, res: Response) {
-    // Clear the token cookie
-    res.clearCookie('token', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      path: '/',
-    });
+    try {
+      const refreshToken = req.cookies?.refreshToken;
 
-    return res.status(200).json({
-      success: true,
-      message: 'Logged out successfully',
-    });
+      // Revoke refresh token if exists
+      if (refreshToken) {
+        try {
+          await authService.revokeRefreshToken(refreshToken);
+        } catch (error) {
+          // Continue even if revocation fails
+          console.error('Error revoking refresh token:', error);
+        }
+      }
+
+      // Clear cookies
+      clearRefreshTokenCookie(res);
+      clearCsrfToken(res);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Logged out successfully',
+      });
+    } catch (error: any) {
+      // Always clear cookies even on error
+      clearRefreshTokenCookie(res);
+      clearCsrfToken(res);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Logged out successfully',
+      });
+    }
   }
 
-  // hàm forgotPassword dùng để gửi email reset password
   async forgotPassword(req: Request, res: Response) {
     try {
       const { email } = req.body;
@@ -228,7 +282,6 @@ class AuthController {
     }
   }
 
-  // hàm validateResetToken dùng để kiểm tra token reset còn hợp lệ không
   async validateResetToken(req: Request, res: Response) {
     try {
       const { token } = req.query as { token: string };
@@ -255,7 +308,6 @@ class AuthController {
     }
   }
 
-  // hàm resetPassword dùng để đặt lại mật khẩu với token
   async resetPassword(req: Request, res: Response) {
     try {
       const { newPassword } = req.body;
@@ -295,14 +347,30 @@ class AuthController {
       if (!userGoogle) {
         throw new Error('Google authentication failed');
       }
-      const userAndTokenResult = await authService.loginOrSignupGoogle(userGoogle);
 
-      // tra ve token trong cookie
-      res.cookie('token', userAndTokenResult.token, COOKIE_OPTIONS);
+      const userAgent = req.get('user-agent') || null;
+      const ip = req.ip || null;
 
-      // chuyen huong ve frontend sau khi dang nhap thanh cong
-      return res.redirect(`${process.env.FRONTEND_URL}/login?google_auth=success`);
+      const { user, accessToken, refreshToken } = await authService.loginOrSignupGoogle(
+        userGoogle,
+        userAgent,
+        ip
+      );
+
+      // Set refresh token in HTTP-only cookie
+      setRefreshTokenCookie(res, refreshToken);
+
+      // Generate CSRF token
+      generateCsrfToken(res);
+
+      // Redirect to frontend with success flag
+      // Access token will be retrieved via /auth/me call from frontend
+      return res.redirect(`${process.env.FRONTEND_URL}/auth/google/callback?success=true`);
     } catch (error) {
+      // Clear cookies on error
+      clearRefreshTokenCookie(res);
+      clearCsrfToken(res);
+
       // Redirect to frontend with error indication
       return res.redirect(`${process.env.FRONTEND_URL}/login?error=google_auth_failed`);
     }

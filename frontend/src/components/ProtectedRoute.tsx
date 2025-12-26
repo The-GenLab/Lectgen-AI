@@ -1,35 +1,16 @@
-import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { isAuthenticated, verifyAuth } from '../utils/auth';
+import { useAuth } from '../context/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requireAdmin?: boolean;
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const [isVerifying, setIsVerifying] = useState(true);
-  const [isValid, setIsValid] = useState(false);
+export default function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
+  const { accessToken, user, isLoading } = useAuth();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      // Quick check first
-      if (!isAuthenticated()) {
-        setIsValid(false);
-        setIsVerifying(false);
-        return;
-      }
-
-      // Verify with backend
-      const valid = await verifyAuth();
-      setIsValid(valid);
-      setIsVerifying(false);
-    };
-
-    checkAuth();
-  }, []);
-
-  // Show loading while verifying
-  if (isVerifying) {
+  // Hiển thị loading spinner khi AuthContext đang khởi tạo
+  if (isLoading) {
     return (
       <div style={{
         display: 'flex',
@@ -55,9 +36,14 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // Redirect if not authenticated
-  if (!isValid) {
+  // Chuyển hướng về login nếu chưa xác thực
+  if (!accessToken || !user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Kiểm tra quyền admin nếu yêu cầu
+  if (requireAdmin && user.role !== 'admin') {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

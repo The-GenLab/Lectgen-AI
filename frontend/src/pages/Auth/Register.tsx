@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import styles from './Register.module.css';
 import { authApi } from '../../api/auth';
+import { useAuth } from '../../context/AuthContext';
 import {
   LogoIcon,
   AutoAwesomeIcon,
@@ -23,32 +24,36 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
+  const { setAuth, refreshAuth } = useAuth();
 
   // Handle Google OAuth callback (in case user is redirected here)
   useEffect(() => {
-    const googleAuthSuccess = searchParams.get('google_auth');
+    const googleAuthSuccess = searchParams.get('success');
     const googleAuthError = searchParams.get('error');
 
-    if (googleAuthSuccess === 'success') {
-      // Google signup successful, fetch user info and redirect
-      const fetchUserAndRedirect = async () => {
+    if (googleAuthSuccess === 'true') {
+      // Google signup successful, refresh to get tokens from cookies
+      const handleGoogleAuth = async () => {
         try {
-          const result = await authApi.me();
-          localStorage.setItem('user', JSON.stringify(result.data.user));
-          navigate('/login-success');
+          const success = await refreshAuth();
+          if (success) {
+            navigate('/login-success');
+          } else {
+            setError('Failed to complete Google authentication');
+          }
         } catch (error: unknown) {
           if (error instanceof Error) {
             setError(error.message);
           } else {
-            setError('Failed to get user info after Google signup');
+            setError('Failed to complete Google authentication');
           }
         }
       };
-      fetchUserAndRedirect();
+      handleGoogleAuth();
     } else if (googleAuthError === 'google_auth_failed') {
       setError('Google authentication failed. Please try again.');
     }
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, refreshAuth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,10 +76,10 @@ export default function Register() {
         return;
       }
 
-      const result = await authApi.register({ email, password });
+      const { accessToken, user } = await authApi.register({ email, password });
       
-      // Save user info to localStorage (token is stored in HTTP-only cookie)
-      localStorage.setItem('user', JSON.stringify(result.data.user));
+      // Store access token in memory via context (not localStorage)
+      setAuth(accessToken, user);
       
       // Redirect to success page
       navigate('/login-success');

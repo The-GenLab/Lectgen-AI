@@ -4,11 +4,12 @@ export interface UpdateProfileData {
   name: string;
 }
 
-export const updateProfile = async (data: UpdateProfileData) => {
+export const updateProfile = async (data: UpdateProfileData, accessToken: string) => {
   const response = await fetch(`${API_URL}/users/profile`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
     },
     credentials: 'include', // Include cookies for auth
     body: JSON.stringify(data),
@@ -23,11 +24,12 @@ export const updateProfile = async (data: UpdateProfileData) => {
   return result;
 };
 
-export const getProfile = async () => {
+export const getProfile = async (accessToken: string) => {
   const response = await fetch(`${API_URL}/users/profile`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
     },
     credentials: 'include',
   });
@@ -41,12 +43,15 @@ export const getProfile = async () => {
   return result;
 };
 
-export const uploadAvatar = async (file: File) => {
+export const uploadAvatar = async (file: File, accessToken: string) => {
   const formData = new FormData();
   formData.append('avatar', file);
 
   const response = await fetch(`${API_URL}/files/avatar`, {
     method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
     credentials: 'include', // Include cookies for auth
     body: formData,
   });
