@@ -8,7 +8,7 @@ class AdminController {
      * GET /api/admin/stats
      * Lấy thống kê tổng quan của hệ thống
      */
-    
+
     async getGlobalStats(req: Request, res: Response) {
         try {
             const { startDate, endDate } = req.query;
@@ -68,21 +68,52 @@ class AdminController {
      */
     async getUsageLogs(req: Request, res: Response) {
         try {
-            const { userId, actionType, status, startDate, endDate, limit, offset } = req.query;
+            // Chuân hóa và lấy các tham số từ query
+            const raw: any = req.query || {};
+            const userId = Array.isArray(raw.userId) ? raw.userId[0] : raw.userId;
+            const actionTypeRaw = Array.isArray(raw.actionType) ? raw.actionType[0] : raw.actionType;
+            const statusRaw = Array.isArray(raw.status) ? raw.status[0] : raw.status;
+            const startDateRaw = Array.isArray(raw.startDate) ? raw.startDate[0] : raw.startDate;
+            const endDateRaw = Array.isArray(raw.endDate) ? raw.endDate[0] : raw.endDate;
+            const limitRaw = Array.isArray(raw.limit) ? raw.limit[0] : raw.limit;
+            const offsetRaw = Array.isArray(raw.offset) ? raw.offset[0] : raw.offset;
+            const q = Array.isArray(raw.q) ? raw.q[0] : raw.q;
+            const sortBy = Array.isArray(raw.sortBy) ? raw.sortBy[0] : raw.sortBy;
+            const order = Array.isArray(raw.order) ? raw.order[0] : raw.order;
+
+            console.debug('getUsageLogs called with', { userId, actionTypeRaw, statusRaw, startDateRaw, endDateRaw, limitRaw, offsetRaw, q, sortBy, order });
+
+            // xác thực các tham số trạng thái và loại hành động
+            const friendlyLevels = ['error', 'warning', 'info'];
+            if (statusRaw) {
+                const s = String(statusRaw).toLowerCase();
+                const isActionStatus = Object.values(ActionStatus).includes((statusRaw as unknown) as ActionStatus);
+                if (!isActionStatus && !friendlyLevels.includes(s)) {
+                    return errorResponse(res, 'Invalid status filter', 400);
+                }
+            }
+
+            if (actionTypeRaw && !Object.values(ActionType).includes((actionTypeRaw as unknown) as ActionType)) {
+                return errorResponse(res, 'Invalid actionType filter', 400);
+            }
 
             const result = await adminService.getUsageLogs({
                 userId: userId as string,
-                actionType: actionType as ActionType,
-                status: status as ActionStatus,
-                startDate: startDate ? new Date(startDate as string) : undefined,
-                endDate: endDate ? new Date(endDate as string) : undefined,
-                limit: limit ? parseInt(limit as string) : 50,
-                offset: offset ? parseInt(offset as string) : 0,
+                actionType: actionTypeRaw as ActionType,
+                status: statusRaw as string | undefined,
+                startDate: startDateRaw ? new Date(startDateRaw as string) : undefined,
+                endDate: endDateRaw ? new Date(endDateRaw as string) : undefined,
+                limit: limitRaw ? parseInt(limitRaw as string) : 50,
+                offset: offsetRaw ? parseInt(offsetRaw as string) : 0,
+                q: q as string | undefined,
+                sortBy: sortBy as string | undefined,
+                order: (order as string | undefined) as 'ASC' | 'DESC' | undefined,
             });
 
             return successResponse(res, result, 'Usage logs retrieved successfully');
         } catch (error: any) {
-            return errorResponse(res, error.message || 'Failed to get usage logs', 500);
+            console.error('getUsageLogs failed:', error && (error.stack || error.message) ? (error.stack || error.message) : error);
+            return errorResponse(res, error?.message || 'Failed to get usage logs', 500);
         }
     }
 

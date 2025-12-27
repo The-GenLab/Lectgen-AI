@@ -1,20 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Row, Col, Statistic, message, Spin, Button } from 'antd';
+import { Card, Row, Col, message, Spin, Button } from 'antd';
 import {
     UserOutlined,
     ThunderboltOutlined,
     CrownOutlined,
     CalendarOutlined,
     CheckCircleOutlined,
-    ArrowUpOutlined,
-    ArrowDownOutlined,
 } from '@ant-design/icons';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import AdminLayout from '../../components/AdminLayout';
 import { getGlobalStats } from '../../api/admin';
 import type { GlobalStats } from '../../api/admin';
 import styles from './AdminUsageQuota.module.css';
+import StatCard from '../../components/StatCard/StatCard';
 
 const AdminUsageQuota = () => {
     const navigate = useNavigate();
@@ -80,106 +79,64 @@ const AdminUsageQuota = () => {
                 </div>
 
                 {/* Stats Cards */}
-                <Row gutter={[24, 24]} style={{ marginBottom: 24 }}>
+                <Row gutter={[24, 24]} align="top" style={{ marginBottom: 24 }}>
                     <Col xs={24} sm={12} lg={6}>
-                        <Card className={styles.summaryCard}>
-                            <Statistic
-                                title="Next Quota Reset"
-                                value={(() => {
-                                    const now = new Date();
-                                    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-                                    return nextMonth.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                })()}
-                                prefix={<CalendarOutlined />}
-                                valueStyle={{ color: '#3f8600' }}
-                            />
-                            <div style={{ fontSize: '12px', color: '#8c8c8c', marginTop: 8 }}>
-                                {(() => {
-                                    const now = new Date();
-                                    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-                                    const daysUntil = Math.ceil((nextMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                                    return `Global monthly reset in ${daysUntil} days`;
-                                })()}
-                            </div>
-                        </Card>
+                        {(() => {
+                            const now = new Date();
+                            const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+                            const dateStr = nextMonth.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                            const daysUntil = Math.ceil((nextMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                            return (
+                                <StatCard
+                                    title="Next Quota Reset"
+                                    value={dateStr}
+                                    icon={<CalendarOutlined />}
+                                    color="green"
+                                    note={`Global monthly reset in ${daysUntil} days`}
+                                    iconPosition="left"
+                                    align="left"
+                                />
+                            );
+                        })()}
                     </Col>
 
                     <Col xs={24} sm={12} lg={6}>
-                        <Card className={styles.summaryCard}>
-                            <Statistic
-                                title="Total Tokens"
-                                value={(stats?.totalTokens || 0) > 1000 ? `${((stats?.totalTokens || 0) / 1000).toFixed(1)}k` : (stats?.totalTokens || 0)}
-                                prefix={<ThunderboltOutlined />}
-                                valueStyle={{ color: '#1677ff' }}
-                            />
-                            <div style={{
-                                fontSize: '12px',
-                                color: (stats?.comparison?.tokenChange || 0) >= 0 ? '#52c41a' : '#ff4d4f',
-                                marginTop: 8,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 4
-                            }}>
-                                {(stats?.comparison?.tokenChange || 0) >= 0 ? (
-                                    <ArrowUpOutlined style={{ fontSize: 10 }} />
-                                ) : (
-                                    <ArrowDownOutlined style={{ fontSize: 10 }} />
-                                )}
-                                <span>{Math.abs(stats?.comparison?.tokenChange || 0)}% vs last month</span>
-                            </div>
-                        </Card>
+                        <StatCard
+                            title="Total Tokens"
+                            value={(stats?.totalTokens || 0) > 1000 ? `${((stats?.totalTokens || 0) / 1000).toFixed(1)}k` : (stats?.totalTokens || 0)}
+                            icon={<ThunderboltOutlined />}
+                            color="blue"
+                            trend={{ value: Number(stats?.comparison?.tokenChange ?? 0), direction: (Number(stats?.comparison?.tokenChange ?? 0) >= 0 ? 'up' : 'down') }}
+                            trendLabel={'vs last month'}
+                            iconPosition="left"
+                            align="left"
+                        />
                     </Col>
 
                     <Col xs={24} sm={12} lg={6}>
-                        <Card className={styles.summaryCard}>
-                            <Statistic
-                                title="Active Free Users"
-                                value={stats?.usersByRole?.FREE || 0}
-                                prefix={<UserOutlined />}
-                                valueStyle={{ color: '#fa8c16' }}
-                            />
-                            <div style={{
-                                fontSize: '12px',
-                                color: (stats?.comparison?.freeUserGrowth || 0) >= 0 ? '#52c41a' : '#ff4d4f',
-                                marginTop: 8,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 4
-                            }}>
-                                {(stats?.comparison?.freeUserGrowth || 0) >= 0 ? (
-                                    <ArrowUpOutlined style={{ fontSize: 10 }} />
-                                ) : (
-                                    <ArrowDownOutlined style={{ fontSize: 10 }} />
-                                )}
-                                <span>{Math.abs(stats?.comparison?.freeUserGrowth || 0)}% new signups</span>
-                            </div>
-                        </Card>
+                        <StatCard
+                            title="Active Free Users"
+                            value={stats?.usersByRole?.FREE || 0}
+                            icon={<UserOutlined />}
+                            color="orange"
+                            trend={{ value: Number(stats?.comparison?.freeUserGrowth ?? 0), direction: (Number(stats?.comparison?.freeUserGrowth ?? 0) >= 0 ? 'up' : 'down') }}
+                            trendLabel={typeof stats?.comparison?.freeUserGrowth === 'number' ? 'new signups' : 'new signups'}
+                            iconPosition="left"
+                            align="left"
+                        />
                     </Col>
 
                     <Col xs={24} sm={12} lg={6}>
-                        <Card className={styles.summaryCard}>
-                            <Statistic
-                                title="Active VIP Users"
-                                value={stats?.usersByRole?.VIP || 0}
-                                prefix={<CrownOutlined />}
-                                valueStyle={{ color: '#faad14' }}
-                            />
-                            <div style={{
-                                fontSize: '12px',
-                                color: (stats?.comparison?.vipRetention || 0) >= 0 ? '#52c41a' : '#ff4d4f',
-                                marginTop: 8,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 4
-                            }}>
-                                {(stats?.comparison?.vipRetention || 0) >= 0 ? (
-                                    <ArrowUpOutlined style={{ fontSize: 10 }} />
-                                ) : (
-                                    <ArrowDownOutlined style={{ fontSize: 10 }} />
-                                )}
-                                <span>{Math.abs(stats?.comparison?.vipRetention || 0)}% retention rate</span>
-                            </div>
-                        </Card>
+                        <StatCard
+                            title="Active VIP Users"
+                            value={stats?.usersByRole?.VIP || 0}
+                            icon={<CrownOutlined />}
+                            color="gold"
+                             trend={{ value: Number(stats?.comparison?.vipRetention ?? 0), direction: (Number(stats?.comparison?.vipRetention ?? 0) >= 0 ? 'up' : 'down') }}
+                            trendLabel={'retention rate'}
+                            iconPosition="left"
+                            align="left"
+                        />
                     </Col>
                 </Row>
 

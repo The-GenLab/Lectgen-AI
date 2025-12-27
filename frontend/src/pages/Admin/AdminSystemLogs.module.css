@@ -1,0 +1,50 @@
+.container {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.headerRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.title {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+}
+
+.subtitle {
+    color: #6c757d;
+    margin: 0;
+    font-size: 13px;
+}
+
+.filterCard {
+    border-radius: 12px;
+    padding: 12px 16px;
+    background: #fff;
+}
+
+.filters {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.expandPre {
+    background: #f6f8fa;
+    padding: 12px;
+    border-radius: 6px;
+    max-height: 320px;
+    overflow: auto;
+    font-size: 13px;
+}
+
+
+/* table adjustments */
+.ant-table-thead>tr>th {
+    background: transparent;
+}

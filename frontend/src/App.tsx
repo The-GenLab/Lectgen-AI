@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard/Dashboard';
 import Profile from './pages/Profile/Profile';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminUsageQuota from './pages/Admin/AdminUsageQuota';
+import AdminSystemLogs from './pages/Admin/AdminSystemLogs';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
         <Route path="/profile" element={<ProtectedRoute> <Profile /> </ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute> <AdminDashboard /> </ProtectedRoute>} />
         <Route path="/admin/usage" element={<ProtectedRoute> <AdminUsageQuota /> </ProtectedRoute>} />
+        <Route path="/admin/logs" element={<ProtectedRoute> <AdminSystemLogs /> </ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

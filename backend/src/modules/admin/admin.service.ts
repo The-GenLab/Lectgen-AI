@@ -31,40 +31,53 @@ class AdminService {
    */
   async getGlobalStats(startDate?: Date, endDate?: Date) {
     const now = new Date();
-    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
-    // Lấy thống kê sử dụng và người dùng
-    const usageStats = await usageLogRepository.getGlobalStats(currentMonthStart, now);
+    // Sử dụng khoảng tgian mặc định nếu ko có tham số
+    const effectiveStart = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), 1);
+    const effectiveEnd = endDate ? new Date(endDate) : now;
+
+    // Lấy thống kê sử dụng và người dùng cho range được chọn
+    const usageStats = await usageLogRepository.getGlobalStats(effectiveStart, effectiveEnd);
     const userStats = await userRepository.getStatistics();
 
-    // So sánh với thời gian trước đó
-    const lastMonthStats = await usageLogRepository.getGlobalStats(lastMonthStart, lastMonthEnd);
+    // tính toán số liệu so sánh với khoảng tgian trước đó
+    const periodLengthMs = effectiveEnd.getTime() - effectiveStart.getTime();
+    const prevEnd = new Date(effectiveStart.getTime() - 1);
+    const prevStart = new Date(effectiveStart.getTime() - periodLengthMs);
 
-    // Tính tỉ lệ thay đổi
-    const tokenChange = lastMonthStats.totalTokens > 0
-      ? Number((((usageStats.totalTokens - lastMonthStats.totalTokens) / lastMonthStats.totalTokens) * 100).toFixed(1))
-      : 0;
+    const lastPeriodStats = await usageLogRepository.getGlobalStats(prevStart, prevEnd);
 
-    // Đếm số user free mới trong tháng 
+    // Tính tỉ lệ thay đổi token sử dụng compared to previous period
+    const tokenChange = lastPeriodStats.totalTokens > 0
+      ? Number((((usageStats.totalTokens - lastPeriodStats.totalTokens) / lastPeriodStats.totalTokens) * 100).toFixed(1))
+      : (usageStats.totalTokens > 0 ? 100 : 0);
+
+    // Tính tỉ lệ thay đổi số lượt tạo slides (calls) so we can display Slides Gen trend
+    const slidesChange = lastPeriodStats.totalCalls > 0
+      ? Number((((usageStats.totalCalls - lastPeriodStats.totalCalls) / lastPeriodStats.totalCalls) * 100).toFixed(1))
+      : (usageStats.totalCalls > 0 ? 100 : 0);
+
+    // So sánh số user free mới trong khoảng tgian so với khoảng tgian trước đó
     const allFreeUsers = await userRepository.findByRole(UserRole.FREE);
-    const newFreeUsersThisMonth = allFreeUsers.filter(user => {
+    const newFreeUsersThisPeriod = allFreeUsers.filter(user => {
       const createdAt = new Date(user.createdAt);
-      return createdAt >= currentMonthStart && createdAt <= now;
+      return createdAt >= effectiveStart && createdAt <= effectiveEnd;
     }).length;
-    const freeUserGrowth = allFreeUsers.length > 0
-      ? Number(((newFreeUsersThisMonth / allFreeUsers.length) * 100).toFixed(1))
-      : 0;
+    const newFreeUsersPrevPeriod = allFreeUsers.filter(user => {
+      const createdAt = new Date(user.createdAt);
+      return createdAt >= prevStart && createdAt <= prevEnd;
+    }).length;
+    //tỉ lệ tăng trưởng của free user
+    const freeUserGrowth = newFreeUsersPrevPeriod > 0
+      ? Number(((newFreeUsersThisPeriod - newFreeUsersPrevPeriod) / newFreeUsersPrevPeriod * 100).toFixed(1))
+      : (newFreeUsersThisPeriod > 0 ? 100 : 0);
 
-    // Tỉ lệ ở lại của user vip (tức là không hủy sub trong tháng)
+    // Tỉ lệ ở lại của user vip (tức là có subscription active) so với tổng số user vip có sub trong khoảng tgian
     const vipUsers = await userRepository.findByRole(UserRole.VIP);
     const vipUsersWithSubscription = vipUsers.filter(user => user.subscriptionExpiresAt !== null);
     const totalVipWithSub = vipUsersWithSubscription.length;
-
-    // Đếm VIP users còn subscription active (chưa hết hạn)
     const activeVipUsers = vipUsersWithSubscription.filter(user => {
-      return new Date(user.subscriptionExpiresAt!) > now;
+      return new Date(user.subscriptionExpiresAt!) > effectiveEnd;
     });
 
     const vipRetention = totalVipWithSub > 0
@@ -77,12 +90,17 @@ class AdminService {
       .sort((a, b) => b.slidesGenerated - a.slidesGenerated)
       .slice(0, 5);
 
-    const quotaStatus = topFreeUsers.map(user => ({
-      userName: user.name || user.email.split('@')[0],
-      used: user.slidesGenerated,
-      limit: user.maxSlidesPerMonth,
-      usagePercent: Math.round((user.slidesGenerated / user.maxSlidesPerMonth) * 100)
-    }));
+    const quotaStatus = topFreeUsers.map(user => {
+      const used = user.slidesGenerated || 0;
+      const limit = user.maxSlidesPerMonth || 0;
+      const usagePercent = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : (used > 0 ? 100 : 0);
+      return {
+        userName: user.name || user.email.split('@')[0],
+        used,
+        limit,
+        usagePercent
+      };
+    });
 
     // Chỉ số của users vip
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -117,15 +135,19 @@ class AdminService {
       ? Math.round(vipLogsWithDuration.reduce((sum, log) => sum + (log.durationMs || 0), 0) / vipLogsWithDuration.length)
       : 0;
 
+    const activeVipUsersNow = vipUsersWithSubscription.filter(u => new Date(u.subscriptionExpiresAt!) > now).length;
+
     const vipMetrics = {
-      activeVipUsers: vipUsers.length,
+      activeVipUsers: activeVipUsersNow,
       vipGenerationsToday: vipGenerationsToday || 0,
       avgResponseTime: avgResponseTime,
-      systemLoad: this.getSystemLoad() 
+      systemLoad: this.getSystemLoad()
     };
 
     return {
       ...usageStats,
+      totalCost: Number((usageStats.totalCost || 0).toFixed(2)),
+      successRate: Number(((usageStats.successRate || 0)).toFixed(1)),
       totalUsers: userStats.total,
       usersByRole: {
         FREE: userStats.free,
@@ -134,6 +156,7 @@ class AdminService {
       },
       comparison: {
         tokenChange,
+        slidesChange,
         freeUserGrowth,
         vipRetention
       },
@@ -213,13 +236,17 @@ class AdminService {
   async getUsageLogs(options: {
     userId?: string;
     actionType?: ActionType;
-    status?: ActionStatus;
+    status?: ActionStatus | string;
     startDate?: Date;
     endDate?: Date;
     limit?: number;
     offset?: number;
+    q?: string;
+    sortBy?: string;
+    order?: 'ASC' | 'DESC';
   }) {
-    return await usageLogRepository.findAll(options);
+    // forward as any to repository (repository accepts both enums and friendly strings)
+    return await usageLogRepository.findAll(options as any);
   }
 
   /**

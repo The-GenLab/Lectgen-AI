@@ -20,6 +20,7 @@ export interface GlobalStats {
     };
     comparison?: {
         tokenChange: number;
+        slidesChange?: number;
         freeUserGrowth: number;
         vipRetention: number;
     };

@@ -22,12 +22,15 @@ class UsageLogRepository {
     async findAll(options: {
         userId?: string;
         actionType?: ActionType;
-        status?: ActionStatus;
+        status?: ActionStatus | string;
         startDate?: Date;
         endDate?: Date;
         limit?: number;
         offset?: number;
-    }): Promise<{ rows: UsageLog[]; count: number }> {
+        q?: string;
+        sortBy?: string;
+        order?: 'ASC' | 'DESC';
+    }): Promise<{ rows: any[]; count: number }> {
         const where: any = {};
 
         if (options.userId) {
@@ -39,7 +42,11 @@ class UsageLogRepository {
         }
 
         if (options.status) {
-            where.status = options.status;
+            const s = String(options.status).toLowerCase();
+            if (s === 'error') where.status = ActionStatus.FAILED;
+            else if (s === 'warning') where.status = ActionStatus.PENDING;
+            else if (s === 'info') where.status = ActionStatus.SUCCESS;
+            else where.status = options.status; 
         }
 
         if (options.startDate || options.endDate) {
@@ -52,12 +59,64 @@ class UsageLogRepository {
             }
         }
 
-        return await UsageLog.findAndCountAll({
-            where,
-            limit: options.limit || 50,
-            offset: options.offset || 0,
-            order: [['createdAt', 'DESC']],
+        // Tìm kiếm text trong id, errorMessage, metadata
+        if (options.q) {
+            const q = `%${options.q}%`;
+            try {
+                const Sequelize = require('sequelize');
+                // id là uuid trong db, cần cast sang text để dùng iLike
+                where[Op.or] = [
+                    Sequelize.where(Sequelize.cast(Sequelize.col('id'), 'text'), { [Op.iLike]: q }),
+                    { errorMessage: { [Op.iLike]: q } },
+                    Sequelize.where(Sequelize.cast(Sequelize.col('metadata'), 'text'), { [Op.iLike]: q })
+                ];
+            } catch (err: any) {
+                // Một số db ko hỗ trợ cast metadata, log cảnh báo và fallback
+                console.warn('Search cast failed (metadata cast failed):', err?.message ?? err);
+                try {
+                    const Sequelize = require('sequelize');
+                    where[Op.or] = [
+                        Sequelize.where(Sequelize.cast(Sequelize.col('id'), 'text'), { [Op.iLike]: q }),
+                        { errorMessage: { [Op.iLike]: q } }
+                    ];
+                } catch (innerErr: any) {
+                    console.warn('Fallback search (id cast also failed):', innerErr?.message ?? innerErr);
+                    where[Op.or] = [{ errorMessage: { [Op.iLike]: q } }];
+                }
+            }
+        }
+
+        // xác thực các trường sắp xếp tránh lỗi SQL injection
+        const allowedSortFields = ['createdAt', 'id', 'actionType', 'status'];
+        let orderArr: any = [['createdAt', 'DESC']];
+        if (options.sortBy && allowedSortFields.includes(options.sortBy)) {
+            orderArr = [[options.sortBy, options.order || 'DESC']];
+        }
+
+        let result;
+        try {
+            result = await UsageLog.findAndCountAll({
+                where,
+                limit: options.limit || 50,
+                offset: options.offset || 0,
+                order: orderArr as any,
+            });
+        } catch (err: any) {
+            console.error('UsageLog.findAndCountAll failed', { err: err?.message ?? err, where, orderArr });
+            throw new Error('Database query failed for usage logs: ' + (err?.message ?? String(err)));
+        }
+
+        // chuẩn hóa rows với level field cho frontend dễ dùng
+        const rows = result.rows.map((r: UsageLog) => {
+            const plain = (r as any).get ? (r as any).get({ plain: true }) : r;
+            let level = 'info';
+            if (plain.status === ActionStatus.FAILED) level = 'error';
+            else if (plain.status === ActionStatus.PENDING) level = 'warning';
+            else if (plain.status === ActionStatus.SUCCESS) level = 'info';
+            return { ...plain, level };
         });
+
+        return { rows, count: result.count };
     }
 
     /**
