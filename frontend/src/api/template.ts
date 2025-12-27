@@ -2,19 +2,10 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-// Create axios instance with auth token
+// Create axios instance with cookie-based auth
 const api = axios.create({
     baseURL: API_BASE_URL,
-    withCredentials: true, // Include cookies for auth
-});
-
-// Add token to requests (optional - cookies are primary auth)
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+    withCredentials: true, // Include cookies for authentication
 });
 
 export interface AnalysisResult {

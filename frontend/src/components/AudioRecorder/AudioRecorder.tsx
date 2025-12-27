@@ -102,12 +102,9 @@ export default function AudioRecorder({ onTranscriptReady }: AudioRecorderProps)
       formData.append('audio', audioBlob, 'recording.webm');
       formData.append('language', 'vi');
 
-      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/speech/transcribe`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
+        credentials: 'include', // Include cookies for authentication
         body: formData
       });
 

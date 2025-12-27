@@ -164,6 +164,19 @@
   color: white !important;
 }
 
+.logoutBtn {
+  border: 1px solid #d9d9d9;
+  color: #595959;
+  font-weight: 500;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.logoutBtn:hover {
+  border-color: #ff4d4f !important;
+  color: #ff4d4f !important;
+}
+
 /* HEADER */
 .header {
   background: white;

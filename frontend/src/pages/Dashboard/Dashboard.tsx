@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Layout,
   Button,
@@ -24,17 +24,22 @@ import {
   UserOutlined,
   ThunderboltOutlined,
   AudioOutlined,
-  PictureOutlined
+  PictureOutlined,
+  LogoutOutlined
 } from '@ant-design/icons';
 import AudioRecorder from '../../components/AudioRecorder';
 import { TemplateAnalyzer } from '../../components/FileUploadPanel';
 import { uploadTemplateImage } from '../../api/template';
+import { getCurrentUser, logout } from '../../utils/auth';
+import { getProfile } from '../../api/user';
+import { getAvatarUrl } from '../../utils/file';
 import styles from './Dashboard.module.css';
 
 const { Sider, Header, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
 export default function Dashboard() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [input, setInput] = useState('');
   const [currentChat] = useState('Marketing Strategy 2024');
   const [activeTab, setActiveTab] = useState('text');
@@ -70,6 +75,101 @@ export default function Dashboard() {
     { icon: <FileTextOutlined />, label: 'University Lecture' },
     { icon: <FileTextOutlined />, label: 'Quarterly Review' }
   ];
+
+  // Load user info on mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        // Try to get full profile from API (includes name and avatarUrl)
+        const response = await getProfile();
+        if (response.success && response.data?.user) {
+          setCurrentUser(response.data.user);
+          // Update localStorage with full user data
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+        } else {
+          // Fallback to localStorage
+          const user = getCurrentUser();
+          setCurrentUser(user);
+        }
+      } catch (error) {
+        console.error('Failed to load user profile:', error);
+        // Fallback to localStorage
+        const user = getCurrentUser();
+        setCurrentUser(user);
+      }
+    };
+    
+    loadUserData();
+  }, []);
+
+  // Get user display name
+  const getUserDisplayName = () => {
+    if (!currentUser) return 'User';
+    if (currentUser.name) return currentUser.name;
+    if (currentUser.email) return currentUser.email.split('@')[0];
+    return 'User';
+  };
+
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    const displayName = getUserDisplayName();
+    const words = displayName.split(' ').filter(w => w.length > 0);
+    if (words.length >= 2) {
+      return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+    }
+    return displayName.substring(0, 2).toUpperCase();
+  };
+
+  // Get role display text
+  const getRoleDisplay = () => {
+    if (!currentUser?.role) return 'Free Plan';
+    const role = currentUser.role.toUpperCase();
+    if (role === 'VIP') return 'VIP';
+    if (role === 'ADMIN') return 'Admin';
+    return 'Free Plan';
+  };
+
+  // Get role tag color
+  const getRoleTagColor = () => {
+    if (!currentUser?.role) return 'default';
+    const role = currentUser.role.toUpperCase();
+    if (role === 'VIP') return 'gold';
+    if (role === 'ADMIN') return 'red';
+    return 'default';
+  };
+
+  // Calculate daily limit (approximate: monthly / 30)
+  const getDailyLimit = () => {
+    if (!currentUser?.maxSlidesPerMonth) return 5;
+    // Calculate approximate daily limit (monthly / 30, rounded up)
+    return Math.ceil(currentUser.maxSlidesPerMonth / 30);
+  };
+
+  // Calculate daily usage (approximate: monthly generated / 30)
+  const getDailyUsage = () => {
+    if (!currentUser?.slidesGenerated) return 0;
+    // Calculate approximate daily usage (monthly generated / 30, rounded down)
+    return Math.floor(currentUser.slidesGenerated / 30);
+  };
+
+  // Get usage percentage
+  const getUsagePercentage = () => {
+    const dailyLimit = getDailyLimit();
+    const dailyUsage = getDailyUsage();
+    if (dailyLimit === 0) return 0;
+    return Math.min(Math.round((dailyUsage / dailyLimit) * 100), 100);
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still redirect even if API call fails
+      window.location.href = '/login';
+    }
+  };
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -195,35 +295,67 @@ export default function Dashboard() {
           {/* Bottom Section */}
           <div className={styles.siderBottom}>
             {/* Usage */}
-            <div className={styles.usageSection}>
-              <Text className={styles.usageLabel}>Daily Limit</Text>
-              <Text className={styles.usageText}>2/5 slides generated</Text>
-              <Progress
-                percent={40}
-                showInfo={false}
-                strokeColor="#1677FF"
-              />
-            </div>
+            {currentUser && (
+              <div className={styles.usageSection}>
+                <Text className={styles.usageLabel}>Daily Limit</Text>
+                <Text className={styles.usageText}>
+                  {getDailyUsage()}/{getDailyLimit()} slides generated
+                </Text>
+                <Progress
+                  percent={getUsagePercentage()}
+                  showInfo={false}
+                  strokeColor="#1677FF"
+                />
+              </div>
+            )}
 
             <Divider style={{ margin: '12px 0' }} />
 
             {/* User Card */}
             <div className={styles.userCard}>
-              <Avatar size={40} icon={<UserOutlined />} className={styles.userAvatar} />
+              {currentUser?.avatarUrl && getAvatarUrl(currentUser.avatarUrl) ? (
+                <Avatar
+                  size={40}
+                  src={getAvatarUrl(currentUser.avatarUrl)!}
+                  className={styles.userAvatar}
+                />
+              ) : (
+                <Avatar size={40} className={styles.userAvatar}>
+                  {getUserInitials()}
+                </Avatar>
+              )}
               <div className={styles.userInfo}>
-                <Text strong className={styles.userName}>John Doe</Text>
-                <Tag color="default" className={styles.userTag}>Free Plan</Tag>
+                <Text strong className={styles.userName}>
+                  {getUserDisplayName()}
+                </Text>
+                <Tag color={getRoleTagColor()} className={styles.userTag}>
+                  {getRoleDisplay()}
+                </Tag>
               </div>
             </div>
 
-            {/* Upgrade Button */}
+            {/* Upgrade Button - Only show for FREE users */}
+            {currentUser?.role?.toUpperCase() === 'FREE' && (
+              <Button
+                block
+                size="large"
+                className={styles.upgradeBtn}
+                icon={<ThunderboltOutlined />}
+                style={{ marginBottom: 8 }}
+              >
+                Upgrade to VIP
+              </Button>
+            )}
+
+            {/* Logout Button */}
             <Button
               block
               size="large"
-              className={styles.upgradeBtn}
-              icon={<ThunderboltOutlined />}
+              icon={<LogoutOutlined />}
+              onClick={handleLogout}
+              className={styles.logoutBtn}
             >
-              Upgrade to VIP
+              Đăng xuất
             </Button>
           </div>
         </div>
