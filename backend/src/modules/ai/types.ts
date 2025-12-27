@@ -67,11 +67,41 @@ export const LatexSchema = z.object({
 });
 
 /**
+ * Zod Schema for LaTeX Presentation Data (for structured output)
+ * AI generates this, then we build LaTeX from it
+ */
+export const LatexSlideSchema = z.object({
+  title: z.string().describe("Slide title"),
+  bullets: z
+    .array(z.string())
+    .min(3)
+    .max(6)
+    .describe("List of bullet points (3-6 items)"),
+  codeSnippet: z
+    .string()
+    .optional()
+    .describe(
+      "Code example if applicable (Python/Java/etc). DO NOT include markdown backticks.",
+    ),
+});
+
+export const LatexPresentationSchema = z.object({
+  presentationTitle: z.string().describe("Main title of the presentation"),
+  subtitle: z.string().describe("Subtitle of the presentation"),
+  slides: z
+    .array(LatexSlideSchema)
+    .min(8)
+    .max(12)
+    .describe("Array of slides content (8-12 slides)"),
+});
+
+/**
  * TypeScript types inferred from Zod schemas
  */
 export type Slide = z.infer<typeof SlideSchema>;
-export type SlideData = z.infer<typeof SlideDataSchema>;
 export type LatexData = z.infer<typeof LatexSchema>;
+export type LatexSlide = z.infer<typeof LatexSlideSchema>;
+export type LatexPresentationData = z.infer<typeof LatexPresentationSchema>;
 
 /**
  * AI Generation Options
@@ -80,5 +110,4 @@ export interface AIGenerationOptions {
   temperature?: number;
   maxSlides?: number;
   style?: "professional" | "casual" | "academic";
-  outputFormat?: "json" | "latex";
 }

@@ -76,65 +76,30 @@ ${styleGuidelines[style]}
 Generate the slide deck now based on these specifications.`;
 };
 
-/**
- * LaTeX mode prompt (for future Phase 2)
- */
-export const LATEX_SLIDE_PROMPT = (
-  topic: string,
-  options?: AIGenerationOptions,
-): string => {
-  const style = options?.style || "professional";
-
-  const styleGuidelines = {
-    professional: "Formal language, industry terminology, practical focus",
-    casual: "Conversational tone, relatable examples, engaging",
-    academic: "Scholarly language, theoretical frameworks, citations style",
-  };
-
-  return String.raw`Create a LaTeX Beamer presentation on: ${topic}
+export const LATEX_SLIDE_PROMPT = (topic: string): string => {
+  return `Generate content for a technical presentation about: "${topic}".
   
-**Style**: ${style}
-${styleGuidelines[style]}
-**Requirements:**
-1. **Structure** (8-12 frames total):
-   - Frame 1: Title page (with \titlepage)
-   - Frame 2: Table of contents (with \tableofcontents)
-   - Frames 3-10: Core content organized in sections
-   - Frame 11: Conclusion/Summary
-   - Frame 12: Q&A / Thank you slide
-2. **LaTeX Structure:**
-   - Start with: \documentclass[10pt]{beamer}
-   - Use theme: \usetheme{Madrid}
-   - Use color theme: \usecolortheme{beaver}
-   - Include packages: inputenc, fontenc, booktabs, graphicx, amsmath
-   - Define title, subtitle, author, institute, date
-   - Use \section{} for organizing content
-   - Each frame must have: \begin{frame}{Title} ... \end{frame}
-3. **Content Guidelines:**
-   - Use itemize/enumerate for lists
-   - Use blocks for definitions: \begin{block}{Title}...\end{block}
-   - Use alertblock for warnings: \begin{alertblock}{Alert}...\end{alertblock}
-   - Use exampleblock for examples
-   - Include mathematical formulas where relevant: $$ ... $$
-   - Use columns for comparisons: \begin{columns}...\end{columns}
-   - Include tables with booktabs if suitable
-   
-4. **Quality Standards:**
-   - Professional academic style
-   - Clear logical flow between sections
-   - Balanced content per frame (not too crowded)
-   - Include speaker notes where helpful
-   - Complete, compilable LaTeX code
-
-5. **CRITICAL OUTPUT RULES (READ CAREFULLY):**
-   - **NO COMMENTS:** Do NOT generate any comments (starting with %) anywhere in the code.
-   - **LINE BREAKS:** The output JSON string must use explicit '\n' for line breaks. Do NOT output the LaTeX code as a single continuous line.
-   - **ONE COMMAND PER LINE:** Ensure every LaTeX command (like \begin, \end, \item, \section) is on its own line.
-   - **ESCAPE:** Properly escape backslashes in the JSON string (e.g., use \\documentclass instead of \documentclass inside the JSON value).
-
-Return structured JSON with:
-{
-  "title": "Main presentation title",
-  "latex_code": "Complete LaTeX code from \\documentclass to \\end{document}"
-}`;
+  Requirements:
+  1. Create 8-10 slides total.
+  2. Structure:
+     - First slide: Introduction/Overview
+     - Middle slides: Core Concepts (split into multiple focused slides)
+     - Include practical examples where applicable
+     - Last slide: Conclusion/Summary
+  
+  3. Content Guidelines:
+     - "title": Clear, concise slide title
+     - "bullets": Short, actionable bullet points (3-6 per slide)
+     - "codeSnippet": If the slide explains code/technical example, put the raw code here
+       * DO NOT use markdown code blocks (\`\`\`)
+       * Just plain code as a string
+       * Use real programming language syntax (Python, JavaScript, Java, etc.)
+  
+  4. Quality:
+     - Focus on technical accuracy
+     - Keep explanations clear and concise
+     - Use practical examples
+     - Ensure logical flow between slides
+  
+  Generate the presentation data now.`;
 };
