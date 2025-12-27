@@ -121,7 +121,7 @@ export const authApi = {
 
   // Refresh token
   async refreshToken(): Promise<{ success: boolean; message: string }> {
-    const response = await fetch(`${API_URL}/auth/refresh`, {
+    const response = await fetch(`${API_URL}/auth/refresh-token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

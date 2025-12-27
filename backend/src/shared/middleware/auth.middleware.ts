@@ -3,20 +3,11 @@ import authService from '../../modules/auth/auth.service';
 import User from '../../core/models/User';
 import { UserRole } from '../constants';
 
-// Extend Express Request type to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: User;
-    }
-  }
-}
-
 // Authenticate middleware
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Get token from cookie first, then fallback to Authorization header
-    let token = req.cookies?.token;
+    // Get access token from cookie first, then fallback to Authorization header
+    let token = req.cookies?.accessToken;
 
     if (!token) {
       const authHeader = req.headers.authorization;

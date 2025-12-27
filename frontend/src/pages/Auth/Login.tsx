@@ -21,6 +21,12 @@ export default function Login() {
   const [showError, setShowError] = useState(false);
   const navigate = useNavigate();
 
+  const handleGoogleLogin = () => {
+    // Redirect to backend Google OAuth endpoint
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    window.location.href = `${API_URL}/auth/google`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -121,7 +127,7 @@ export default function Login() {
             <Divider text="Or continue with" />
 
             {/* Social Login */}
-            <SocialButtons variant="login" disabled={loading} />
+            <SocialButtons variant="login" disabled={loading} onGoogleClick={handleGoogleLogin} />
           </form>
 
           {/* Card Footer */}

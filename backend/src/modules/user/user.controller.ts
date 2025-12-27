@@ -43,12 +43,12 @@ class UserController {
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
 
-      const { users, total } = await userService.getAllUsers(limit, offset);
+      const { rows: users, count: total } = await userService.getAllUsers(limit, offset);
 
       return successResponse(
         res,
         {
-          users: users.map((u) => ({
+          users: users.map((u: any) => ({
             id: u.id,
             email: u.email,
             role: u.role,
