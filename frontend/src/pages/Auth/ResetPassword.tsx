@@ -36,8 +36,8 @@ export default function ResetPassword() {
 
     if (!password || !confirmPassword) return;
 
-    if (password.length < 12) {
-      setError('Password must be at least 12 characters');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -84,7 +84,7 @@ export default function ResetPassword() {
           <div className={styles.headingSection}>
             <h1 className={styles.title}>Reset Password</h1>
             <p className={styles.subtitle}>
-              Enter your new password below. Password must be at least 12 characters.
+              Enter your new password below. Password must be at least 8 characters.
             </p>
           </div>
 

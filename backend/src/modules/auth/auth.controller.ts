@@ -1,17 +1,30 @@
 import { Request, Response } from 'express';
 import authService from './auth.service';
+import passport from '../../core/config/passport';
 
-// Cookie options for JWT token
-const COOKIE_OPTIONS = {
+// Cookie options cho access token
+const ACCESS_TOKEN_COOKIE_OPTIONS = {
   httpOnly: true, // Prevents JavaScript access (XSS protection)
   secure: process.env.NODE_ENV === 'production', // HTTPS only in production
   sameSite: 'lax' as const, // CSRF protection
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+  maxAge: 15 * 60 * 1000, // 15 minutes
+  path: '/',
+};
+
+// Cookie options cho refresh token
+const REFRESH_TOKEN_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   path: '/',
 };
 
 class AuthController {
-  //hàm checkEmail dùng để kiểm tra email đã tồn tại trong hệ thống hay chưa
+  /**
+   * Kiểm tra email đã tồn tại trong hệ thống hay chưa
+   * POST /api/auth/check-email
+   */
   async checkEmail(req: Request, res: Response) {
     try {
       const { email } = req.body;
@@ -37,7 +50,14 @@ class AuthController {
     }
   }
 
-  // hàm register dùng để đăng ký tài khoản mới và trả về token đăng nhập ngay sau khi đăng ký
+  /**
+   * Đăng ký tài khoản mới
+   * POST /api/auth/register
+   * Body: { email, password }
+   * - Password tối thiểu 8 ký tự
+   * - Tự động đăng nhập sau khi đăng ký
+   * - Trả về access token và refresh token trong cookie
+   */
   async register(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
@@ -49,10 +69,11 @@ class AuthController {
         });
       }
 
-      const { user, token } = await authService.register({ email, password });
+      const { user, accessToken, refreshToken } = await authService.register({ email, password });
 
-      // Set token in HTTP-only cookie
-      res.cookie('token', token, COOKIE_OPTIONS);
+      // Set tokens in HTTP-only cookies
+      res.cookie('accessToken', accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
+      res.cookie('refreshToken', refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
 
       return res.status(201).json({
         success: true,
@@ -61,9 +82,13 @@ class AuthController {
           user: {
             id: user.id,
             email: user.email,
+            name: user.name,
+            avatarUrl: user.avatarUrl,
             role: user.role,
             slidesGenerated: user.slidesGenerated,
             maxSlidesPerMonth: user.maxSlidesPerMonth,
+            subscriptionExpiresAt: user.subscriptionExpiresAt,
+            createdAt: user.createdAt,
           },
         },
       });
@@ -75,7 +100,13 @@ class AuthController {
     }
   }
 
-  // hàm login dùng để xác thực email + password, nếu đúng thì cho đăng nhập và trả về token
+  /**
+   * Đăng nhập
+   * POST /api/auth/login
+   * Body: { email, password }
+   * - Xác thực email + password
+   * - Trả về access token và refresh token trong cookie
+   */
   async login(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
@@ -87,10 +118,11 @@ class AuthController {
         });
       }
 
-      const { user, token } = await authService.login({ email, password });
+      const { user, accessToken, refreshToken } = await authService.login({ email, password });
 
-      // Set token in HTTP-only cookie
-      res.cookie('token', token, COOKIE_OPTIONS);
+      // Set tokens in HTTP-only cookies
+      res.cookie('accessToken', accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
+      res.cookie('refreshToken', refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
 
       return res.status(200).json({
         success: true,
@@ -99,12 +131,15 @@ class AuthController {
           user: {
             id: user.id,
             email: user.email,
+            name: user.name,
+            avatarUrl: user.avatarUrl,
             role: user.role,
             slidesGenerated: user.slidesGenerated,
             maxSlidesPerMonth: user.maxSlidesPerMonth,
+            subscriptionExpiresAt: user.subscriptionExpiresAt,
+            createdAt: user.createdAt,
           },
         },
-        token: token
       });
     } catch (error: any) {
       return res.status(401).json({
@@ -114,7 +149,11 @@ class AuthController {
     }
   }
 
-  // hàm me dùng để check xem request hiện tại có user đăng nhập hợp lệ hay không và trả thông tin user đó
+  /**
+   * Lấy thông tin user hiện tại (protected route)
+   * GET /api/auth/me
+   * Requires: JWT token trong cookie hoặc Authorization header
+   */
   async me(req: Request, res: Response) {
     try {
       if (!req.user) {
@@ -130,6 +169,8 @@ class AuthController {
           user: {
             id: req.user.id,
             email: req.user.email,
+            name: req.user.name,
+            avatarUrl: req.user.avatarUrl,
             role: req.user.role,
             slidesGenerated: req.user.slidesGenerated,
             maxSlidesPerMonth: req.user.maxSlidesPerMonth,
@@ -146,26 +187,28 @@ class AuthController {
     }
   }
 
-  // hàm refreshToken dùng để làm mới token khi token cũ sắp hết hạn hoặc đã hết hạn
+  /**
+   * Refresh access token
+   * POST /api/auth/refresh-token
+   * - Sử dụng refresh token trong cookie để tạo access token mới
+   * - Cả access token và refresh token đều được làm mới
+   */
   async refreshToken(req: Request, res: Response) {
     try {
-      // Get token from cookie first, then fallback to Authorization header
-      const oldToken = req.cookies?.token || 
-        (req.headers.authorization?.startsWith('Bearer ') 
-          ? req.headers.authorization.substring(7) 
-          : null);
+      const oldRefreshToken = req.cookies?.refreshToken;
 
-      if (!oldToken) {
+      if (!oldRefreshToken) {
         return res.status(401).json({
           success: false,
-          message: 'No token provided',
+          message: 'No refresh token provided',
         });
       }
 
-      const newToken = await authService.refreshToken(oldToken);
+      const { accessToken, refreshToken } = await authService.refreshAccessToken(oldRefreshToken);
 
-      // Set new token in cookie
-      res.cookie('token', newToken, COOKIE_OPTIONS);
+      // Set new tokens in cookies
+      res.cookie('accessToken', accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
+      res.cookie('refreshToken', refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
 
       return res.status(200).json({
         success: true,
@@ -179,23 +222,97 @@ class AuthController {
     }
   }
 
-  // hàm logout dùng để kết thúc phiên đăng nhập – xóa cookie token
+  /**
+   * Đăng xuất
+   * POST /api/auth/logout
+   * - Xóa refresh token khỏi database
+   * - Xóa cookies
+   */
   async logout(req: Request, res: Response) {
-    // Clear the token cookie
-    res.clearCookie('token', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      path: '/',
-    });
+    try {
+      const refreshToken = req.cookies?.refreshToken;
 
-    return res.status(200).json({
-      success: true,
-      message: 'Logged out successfully',
-    });
+      if (refreshToken) {
+        // Xóa session khỏi database
+        await authService.logout(refreshToken);
+      }
+
+      // Clear cookies
+      res.clearCookie('accessToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        path: '/',
+      });
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        path: '/',
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Logged out successfully',
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        success: false,
+        message: error.message || 'Logout failed',
+      });
+    }
   }
 
-  // hàm forgotPassword dùng để gửi email reset password
+  /**
+   * Đăng xuất tất cả thiết bị
+   * POST /api/auth/logout-all
+   * Requires: JWT token (authenticated user)
+   */
+  async logoutAll(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Unauthorized',
+        });
+      }
+
+      // Xóa tất cả sessions của user
+      await authService.logoutAll(req.user.id);
+
+      // Clear cookies
+      res.clearCookie('accessToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        path: '/',
+      });
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        path: '/',
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Logged out from all devices successfully',
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        success: false,
+        message: error.message || 'Logout all failed',
+      });
+    }
+  }
+
+  /**
+   * Quên mật khẩu - Gửi email reset password
+   * POST /api/auth/forgot-password
+   * Body: { email }
+   * - Tạo reset token (10 phút)
+   * - Gửi email với link reset password
+   */
   async forgotPassword(req: Request, res: Response) {
     try {
       const { email } = req.body;
@@ -207,7 +324,6 @@ class AuthController {
         });
       }
 
-      // Generate reset token and send email
       await authService.forgotPassword(email);
 
       return res.status(200).json({
@@ -215,7 +331,7 @@ class AuthController {
         message: 'If the email exists, a password reset link has been sent',
       });
     } catch (error: any) {
-      // Don't reveal if email exists or not for security
+      // Không tiết lộ email có tồn tại hay không (bảo mật)
       return res.status(200).json({
         success: true,
         message: 'If the email exists, a password reset link has been sent',
@@ -223,7 +339,13 @@ class AuthController {
     }
   }
 
-  // hàm resetPassword dùng để đặt lại mật khẩu với token
+  /**
+   * Reset password với token
+   * POST /api/auth/reset-password
+   * Body: { token, newPassword }
+   * - Token từ URL query được gửi qua email
+   * - Password tối thiểu 8 ký tự
+   */
   async resetPassword(req: Request, res: Response) {
     try {
       const { token, newPassword } = req.body;
@@ -235,10 +357,10 @@ class AuthController {
         });
       }
 
-      if (newPassword.length < 12) {
+      if (newPassword.length < 8) {
         return res.status(400).json({
           success: false,
-          message: 'Password must be at least 12 characters',
+          message: 'Password must be at least 8 characters',
         });
       }
 
@@ -246,7 +368,7 @@ class AuthController {
 
       return res.status(200).json({
         success: true,
-        message: 'Password reset successfully',
+        message: 'Password reset successfully. You can now login with your new password.',
       });
     } catch (error: any) {
       return res.status(400).json({
@@ -254,6 +376,56 @@ class AuthController {
         message: error.message || 'Password reset failed',
       });
     }
+  }
+
+  /**
+   * Google OAuth - Khởi tạo authentication
+   * GET /api/auth/google
+   * - Redirect user đến Google consent screen
+   */
+  async googleAuth(req: Request, res: Response) {
+    // Passport sẽ xử lý redirect đến Google
+    passport.authenticate('google', {
+      scope: ['profile', 'email'],
+    })(req, res);
+  }
+
+  /**
+   * Google OAuth Callback
+   * GET /api/auth/google/callback
+   * - Google redirect về đây sau khi user authorize
+   * - Tạo hoặc update user
+   * - Tạo tokens và redirect về frontend
+   */
+  async googleCallback(req: Request, res: Response) {
+    passport.authenticate('google', { session: false }, async (err, user) => {
+      try {
+        if (err || !user) {
+          const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+          return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
+        }
+
+        // Xử lý Google OAuth (tạo user hoặc login)
+        const result = await authService.handleGoogleAuth({
+          googleId: user.googleId,
+          email: user.email,
+          name: user.name,
+          avatarUrl: user.avatarUrl,
+        });
+
+        // Set tokens in cookies
+        res.cookie('accessToken', result.accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
+        res.cookie('refreshToken', result.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+
+        // Redirect về frontend
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        return res.redirect(`${frontendUrl}/dashboard`);
+      } catch (error: any) {
+        console.error('Google OAuth callback error:', error);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        return res.redirect(`${frontendUrl}/login?error=auth_failed`);
+      }
+    })(req, res);
   }
 }
 

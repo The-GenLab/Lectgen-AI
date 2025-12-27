@@ -13,13 +13,27 @@ export interface UserAttributes {
   slidesGenerated: number;
   maxSlidesPerMonth: number;
   subscriptionExpiresAt: Date | null;
+  googleId: string | null; // Thêm Google ID cho OAuth
+  resetPasswordToken: string | null; // Token để reset password (đã hash)
+  resetPasswordExpires: Date | null; // Thời gian hết hạn của reset token (10 phút)
   createdAt: Date;
   updatedAt: Date;
 }
 
 // Optional fields for creation
 export interface UserCreationAttributes
-  extends Optional<UserAttributes, 'id' | 'slidesGenerated' | 'maxSlidesPerMonth' | 'subscriptionExpiresAt' | 'createdAt' | 'updatedAt'> {}
+  extends Optional<
+    UserAttributes,
+    | 'id'
+    | 'slidesGenerated'
+    | 'maxSlidesPerMonth'
+    | 'subscriptionExpiresAt'
+    | 'googleId'
+    | 'resetPasswordToken'
+    | 'resetPasswordExpires'
+    | 'createdAt'
+    | 'updatedAt'
+  > {}
 
 // User model
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
@@ -32,6 +46,9 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public slidesGenerated!: number;
   public maxSlidesPerMonth!: number;
   public subscriptionExpiresAt!: Date | null;
+  public googleId!: string | null;
+  public resetPasswordToken!: string | null;
+  public resetPasswordExpires!: Date | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -78,6 +95,7 @@ User.init(
     passwordHash: {
       type: DataTypes.STRING,
       allowNull: false,
+      defaultValue: '', // Cho phép Google OAuth users không có password
     },
     role: {
       type: DataTypes.ENUM(UserRole.FREE, UserRole.VIP, UserRole.ADMIN),
@@ -95,6 +113,19 @@ User.init(
       defaultValue: QUOTA.DEFAULT_MAX_SLIDES,
     },
     subscriptionExpiresAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    googleId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
+    },
+    resetPasswordToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    resetPasswordExpires: {
       type: DataTypes.DATE,
       allowNull: true,
     },

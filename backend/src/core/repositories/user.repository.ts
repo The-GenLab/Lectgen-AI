@@ -109,6 +109,23 @@ class UserRepository {
       order: [['createdAt', 'DESC']],
     });
   }
+
+  // Find user by reset password token (còn hạn)
+  async findByResetToken(resetPasswordToken: string): Promise<User | null> {
+    return await User.findOne({
+      where: {
+        resetPasswordToken,
+        resetPasswordExpires: {
+          [Op.gt]: new Date(), // Token phải còn hạn
+        },
+      },
+    });
+  }
+
+  // Find user by Google ID
+  async findByGoogleId(googleId: string): Promise<User | null> {
+    return await User.findOne({ where: { googleId } });
+  }
 }
 
 export default new UserRepository();
