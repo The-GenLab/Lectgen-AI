@@ -3,9 +3,10 @@ import User from './User';
 import Conversation from './Conversation';
 import Message from './Message';
 import TemplateFile from './TemplateFile';
+import UsageLog from './UsageLog';
 
 // Export all models
-export { User, Conversation, Message, TemplateFile };
+export { User, Conversation, Message, TemplateFile, UsageLog };
 
 // Sync database (development only)
 export const syncDatabase = async (force: boolean = false) => {

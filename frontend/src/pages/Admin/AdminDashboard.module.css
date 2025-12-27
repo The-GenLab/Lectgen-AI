@@ -1,0 +1,440 @@
+.statKpiBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    gap: 6px;
+    padding-top: 2px;
+}
+
+.statTopRow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 12px;
+    margin-bottom: 2px;
+}
+
+/* ensure cards stretch to equal height */
+.statCard {
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    transition: all 0.25s ease;
+    background: #fff;
+    border: none;
+    padding: 20px 18px 18px 18px;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+}
+
+/* Slight adjustments to title/value spacing */
+.statTitle {
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 600;
+    line-height: 1.2;
+    margin: 0;
+    text-align: center;
+}
+
+.statValue {
+    font-size: 30px;
+    font-weight: 800;
+    color: #111827;
+    line-height: 1.1;
+    margin: 4px 0 0 0;
+    letter-spacing: -1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+}
+
+.adminLayout {
+    min-height: 100vh;
+    background: #f5f7fa;
+}
+
+.content {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.headerRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.kpiRow {
+    margin-bottom: 16px;
+}
+
+.loadingContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.header {
+    margin-bottom: 24px;
+}
+
+.title {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+    color: #1a202c;
+}
+
+.statsRow {
+    margin-bottom: 24px;
+}
+
+
+.statCard {
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    transition: all 0.25s ease;
+    background: #fff;
+    border: none;
+    padding: 20px 18px 18px 18px;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.statCard:hover {
+    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
+    transform: translateY(-4px);
+}
+
+
+.statInner {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    height: 100%;
+}
+
+.iconBox {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(79, 70, 229, 0.04) 100%);
+    color: #4f46e5;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.iconGreen {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(34, 197, 94, 0.04) 100%);
+    color: #22c55e;
+}
+
+.iconTeal {
+    background: linear-gradient(135deg, rgba(45, 212, 191, 0.08) 0%, rgba(45, 212, 191, 0.04) 100%);
+    color: #2dd4bf;
+}
+
+.iconRed {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.06) 0%, rgba(239, 68, 68, 0.03) 100%);
+    color: #ef4444;
+}
+
+.statBody {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+}
+
+.statTitle {
+    font-size: 15px;
+    color: #6b7280;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 0;
+    text-align: center;
+}
+
+.statValue {
+    font-size: 30px;
+    font-weight: 800;
+    color: #111827;
+    line-height: 1.1;
+    margin-top: 0;
+    letter-spacing: -1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+}
+
+.trendRow {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    min-width: 90px;
+}
+
+.trendBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.trendBadge .anticon {
+    font-size: 12px;
+}
+
+.up {
+    background: rgba(16, 185, 129, 0.08);
+    color: #10b981;
+}
+
+.down {
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+}
+
+.trendValue {
+    font-weight: 700;
+}
+
+.trendNote {
+    font-size: 11px;
+    color: #9aa4b2;
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+.statMeta {
+    font-size: 12px;
+    color: #718096;
+    margin-top: 8px;
+}
+
+.chartsRow {
+    margin-bottom: 24px;
+}
+
+.chartSection {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Căn giữa biểu đồ */
+    position: relative;  /* Trả về vị trí tương đối mặc định */
+}
+
+.chartSection h3 {
+    margin-bottom: 16px;
+    align-self: flex-start; 
+}
+
+.chartCard {
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    min-height: 400px;
+    background: #fff;
+    padding: 24px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.quotaCard {
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    min-height: 300px;
+}
+
+.vipCard {
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    min-height: 300px;
+    border: none;
+}
+
+.vipCard :global(.ant-card-body) {
+    padding: 24px;
+}
+
+.vipHeader {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.vipIcon {
+    font-size: 24px;
+    color: #ffd700;
+    margin-right: 12px;
+}
+
+.vipTitle {
+    font-size: 20px;
+    font-weight: 600;
+    color: white;
+    margin: 0;
+}
+
+.vipDescription {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 14px;
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+.metricItem {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.metricTitle {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.metricValueLarge {
+    font-size: 20px;
+    font-weight: 600;
+    color: white;
+    display: flex;
+    align-items: center;
+}
+
+.vipFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.activeVips {
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.manageTiersBtn {
+    background: white;
+    color: #667eea;
+    border: none;
+    font-weight: 500;
+    border-radius: 6px;
+}
+
+.manageTiersBtn:hover {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: #667eea !important;
+    border: none !important;
+}
+
+.vipCard h3 {
+    color: white;
+    font-size: 20px;
+    margin-bottom: 12px;
+}
+
+.vipCard p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.comingSoon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+    color: #a0aec0;
+    font-size: 14px;
+}
+
+.quotaList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.quotaItem {
+    padding: 12px;
+    background: #f7fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.quotaUser {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.emptyState {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 150px;
+    color: #a0aec0;
+}
+
+.vipMetrics {
+    margin-bottom: 20px;
+}
+
+.metricBox {
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.metricValue {
+    font-size: 28px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 4px;
+}
+
+.metricLabel {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+}

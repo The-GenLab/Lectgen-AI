@@ -15,6 +15,15 @@ export default function Success() {
           clearInterval(interval);
           // Redirect to dashboard after loading complete
           setTimeout(() => {
+            // Check if user is admin and redirect accordingly
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+              const user = JSON.parse(userStr);
+              if (user.role === 'ADMIN') {
+                navigate('/admin');
+                return;
+              }
+            }
             navigate('/');
           }, 500);
           return 100;
@@ -65,8 +74,8 @@ export default function Success() {
                 <span>{displayProgress}%</span>
               </div>
               <div className={styles.progressBarWrapper}>
-                <div 
-                  className={styles.progressBar} 
+                <div
+                  className={styles.progressBar}
                   style={{ width: `${displayProgress}%` }}
                 ></div>
               </div>

@@ -1,7 +1,11 @@
 import { Router } from "express";
 import aiController from "./ai.controller";
+import { authenticate } from "../../shared/middleware/auth.middleware";
 
 const router = Router();
+
+// All AI routes require authentication
+router.use(authenticate);
 
 /**
  * POST /api/ai/generate
