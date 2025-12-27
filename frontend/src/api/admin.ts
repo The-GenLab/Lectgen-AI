@@ -36,12 +36,19 @@ export interface GlobalStats {
         avgResponseTime: number;
         systemLoad: number;
     };
+    // number of unique users active in the selected range grouped by role
+    activeUsersByRole?: {
+        FREE: number;
+        VIP: number;
+        ADMIN: number;
+    };
 }
 
 export interface UserWithStats {
     id: string;
     email: string;
     name: string;
+    avatarUrl?: string | null;
     role: string;
     slidesGenerated: number;
     maxSlidesPerMonth: number;
@@ -66,6 +73,7 @@ export interface UsageLog {
     errorMessage: string | null;
     metadata: any;
     createdAt: string;
+    level?: 'info' | 'warning' | 'error' | string;
 }
 
 /**
@@ -108,10 +116,13 @@ export const getUsageLogs = async (params?: {
     userId?: string;
     actionType?: string;
     status?: string;
+    q?: string;
     startDate?: string;
     endDate?: string;
     limit?: number;
     offset?: number;
+    sortBy?: string;
+    order?: 'ASC' | 'DESC';
 }): Promise<{ rows: UsageLog[]; count: number }> => {
     const response = await axios.get(`${API_BASE_URL}/admin/usage-logs`, { params });
     return response.data.data;
