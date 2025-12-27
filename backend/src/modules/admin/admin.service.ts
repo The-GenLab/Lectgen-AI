@@ -40,6 +40,17 @@ class AdminService {
     const usageStats = await usageLogRepository.getGlobalStats(effectiveStart, effectiveEnd);
     const userStats = await userRepository.getStatistics();
 
+    // Số người dùng hoạt động theo role
+    let activeUsersByRole = { FREE: 0, VIP: 0, ADMIN: 0 };
+    if (usageStats.uniqueUserIds && usageStats.uniqueUserIds.length > 0) {
+      const activeUsers = await userRepository.findByIds(usageStats.uniqueUserIds as string[]);
+      activeUsers.forEach(u => {
+        if (u.role === UserRole.FREE) activeUsersByRole.FREE++;
+        else if (u.role === UserRole.VIP) activeUsersByRole.VIP++;
+        else if (u.role === UserRole.ADMIN) activeUsersByRole.ADMIN++;
+      });
+    }
+
     // tính toán số liệu so sánh với khoảng tgian trước đó
     const periodLengthMs = effectiveEnd.getTime() - effectiveStart.getTime();
     const prevEnd = new Date(effectiveStart.getTime() - 1);
@@ -154,6 +165,8 @@ class AdminService {
         VIP: userStats.vip,
         ADMIN: userStats.admin,
       },
+      // activeUsersByRole shows number of unique users with activity in the selected range, grouped by role
+      activeUsersByRole,
       comparison: {
         tokenChange,
         slidesChange,

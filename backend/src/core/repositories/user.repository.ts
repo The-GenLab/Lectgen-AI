@@ -92,6 +92,12 @@ class UserRepository {
     return { total, free, vip, admin };
   }
 
+  // Find users by an array of ids
+  async findByIds(ids: string[]): Promise<User[]> {
+    if (!ids || ids.length === 0) return [];
+    return await User.findAll({ where: { id: ids } });
+  }
+
   // Search users by email pattern
   async searchByEmail(emailPattern: string): Promise<User[]> {
     return await User.findAll({
