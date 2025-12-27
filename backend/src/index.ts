@@ -9,7 +9,16 @@ import authRoutes from "./modules/auth/auth.routes";
 import conversationRoutes from "./modules/conversation/conversation.routes";
 import userRoutes from "./modules/user/user.routes";
 import fileRoutes from "./modules/file/file.routes";
-import { errorHandler, notFoundHandler } from "./shared/middleware/error.middleware";
+import templateRoutes from "./modules/template/template.routes";
+import speechRoutes from "./modules/speech/speech.routes";
+import adminRoutes from "./modules/admin/admin.routes";
+import {
+  errorHandler,
+  notFoundHandler,
+} from "./shared/middleware/error.middleware";
+
+// AI routes
+import aiRoutes from "./modules/ai/ai.routes";
 
 configDotenv();
 
@@ -42,15 +51,19 @@ app.get("/health", (req: Request, res: Response) => {
 
 // File upload routes MUST come before express.json() to avoid parsing FormData as JSON
 app.use("/api/files", fileRoutes);
+app.use("/api/template", templateRoutes);
 
 // Increase body size limit to 10MB for other routes
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/speech", speechRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.json({
@@ -86,4 +99,3 @@ const startServer = async () => {
 };
 
 startServer();
-

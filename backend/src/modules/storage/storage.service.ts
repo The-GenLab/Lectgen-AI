@@ -58,30 +58,6 @@ class StorageService {
     return `${BUCKETS.AUDIO}/${objectName}`;
   }
 
-  // Upload image file
-  async uploadImage(file: Buffer, fileName: string, userId: string): Promise<string> {
-    const objectName = await this.uploadFile(
-      BUCKETS.IMAGES,
-      file,
-      fileName,
-      'image/jpeg',
-      { userId }
-    );
-    return `${BUCKETS.IMAGES}/${objectName}`;
-  }
-
-  // Upload PDF file
-  async uploadPDF(file: Buffer, fileName: string, userId: string): Promise<string> {
-    const objectName = await this.uploadFile(
-      BUCKETS.PDFS,
-      file,
-      fileName,
-      'application/pdf',
-      { userId }
-    );
-    return `${BUCKETS.PDFS}/${objectName}`;
-  }
-
   // Get file URL
   async getFileUrl(filePathWithBucket: string): Promise<string> {
     const [bucketName, ...objectNameParts] = filePathWithBucket.split('/');

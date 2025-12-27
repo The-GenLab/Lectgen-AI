@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # PostgreSQL Database
@@ -16,7 +16,7 @@ services:
     networks:
       - lectgen-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U lectgen -d lectgen_db" ]
+      test: ["CMD-SHELL", "pg_isready -U lectgen -d lectgen_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,7 +37,7 @@ services:
       - lectgen-network
     command: server /data --console-address ":9001"
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
@@ -53,7 +53,7 @@ services:
     networks:
       - lectgen-network
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -65,7 +65,7 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@lectgen.ai
       PGADMIN_DEFAULT_PASSWORD: admin123
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_SERVER_MODE: "False"
     ports:
       - "5050:80"
     volumes:
@@ -76,6 +76,33 @@ services:
       postgres:
         condition: service_healthy
 
+  whisper:
+    image: ghcr.io/ggml-org/whisper.cpp:main
+    container_name: lectgen-whisper
+    restart: always
+    entrypoint:
+      [
+        "bash",
+        "-lc",
+        "tr -d '\\r' < /start-whisper.sh > /tmp/start-whisper.sh; chmod +x /tmp/start-whisper.sh; exec bash /tmp/start-whisper.sh",
+      ]
+    environment:
+      WHISPER_MODEL_NAME: medium
+      WHISPER_LANGUAGE: vi
+      WHISPER_SUPPRESS_NST: "0"
+      WHISPER_PROMPT: "Đây là bài thuyết trình về học tập, nghiên cứu, công nghệ, kinh doanh"
+      WHISPER_THREADS: "8"
+      WHISPER_BEST_OF: "5"
+      WHISPER_BEAM_SIZE: "5"
+      WHISPER_TEMPERATURE: "0.0"
+    volumes:
+      - whisper_models:/models
+      - ./scripts/start-whisper.sh:/start-whisper.sh:ro
+    ports:
+      - "8081:8080"
+    networks:
+      - lectgen-network
+
   # Backend (Development with hot reload)
   backend:
     build:
@@ -85,6 +112,8 @@ services:
     env_file:
       - .env
     restart: always
+    env_file:
+      - ./.env
     environment:
       NODE_ENV: development
       PORT: 5000
@@ -94,7 +123,8 @@ services:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin123
       REDIS_URL: redis://redis:6379
-      GOOGLE_API_KEY: AIzaSyANKwVZyvLpd_pvN1dUJ2oabVByuEil4E4
+      STT_PROVIDER: local
+      WHISPER_BASE_URL: http://whisper:8080
     ports:
       - "5000:5000"
       - "9229:9229"
@@ -110,6 +140,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      whisper:
+        condition: service_started
     develop:
       watch:
         - path: ./backend/src
@@ -123,7 +155,7 @@ volumes:
   minio_data:
   redis_data:
   pgadmin_data:
-
+  whisper_models:
 
 networks:
   lectgen-network:

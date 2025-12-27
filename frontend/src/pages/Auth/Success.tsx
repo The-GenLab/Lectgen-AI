@@ -78,8 +78,8 @@ export default function Success() {
                 <span>{displayProgress}%</span>
               </div>
               <div className={styles.progressBarWrapper}>
-                <div 
-                  className={styles.progressBar} 
+                <div
+                  className={styles.progressBar}
                   style={{ width: `${displayProgress}%` }}
                 ></div>
               </div>

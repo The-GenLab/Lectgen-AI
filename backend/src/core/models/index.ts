@@ -4,9 +4,10 @@ import Conversation from './Conversation';
 import Message from './Message';
 import Session from './Session';
 import OAuthState from './OAuthState';
-
+import TemplateFile from './TemplateFile';
+import UsageLog from './UsageLog';
 // Export all models
-export { User, Conversation, Message, Session, OAuthState };
+export { User, Conversation, Message, Session, OAuthState, TemplateFile, UsageLog };
 
 // Sync database (development only)
 export const syncDatabase = async (force: boolean = false) => {
