@@ -7,7 +7,8 @@ import {
 import {
   AIGenerationOptions,
   LatexData,
-  LatexSchema,
+  LatexPresentationData,
+  LatexPresentationSchema,
   SlideData,
   SlideDataSchema,
 } from "./types";
@@ -230,49 +231,66 @@ class AIService {
   }
 
   /**
-   * Generate LaTeX Beamer content from text prompt
+   * Generate LaTeX Beamer presentation from text prompt
+   * Uses withStructuredOutput for 100% reliable JSON parsing
+   * Steps:
+   * 1. Use AI with structured output to generate presentation data
+   * 2. Build LaTeX code from structured data using buildLatexFromJSON()
+   * 3. Validate the generated LaTeX code
    */
-  async generateLatexContent(
-    prompt: string,
-    options?: AIGenerationOptions,
-  ): Promise<LatexData> {
+  async generateLatexContent(prompt: string): Promise<LatexData> {
     try {
       console.log(
-        "[ AI Service ]: Generating LaTeX for:",
+        "[ AI Service ]: Generating LaTeX Data for:",
         prompt.substring(0, 50) + "...",
       );
 
       const startTime = Date.now();
 
-      // Create structured output model with Zod schema
-      const structuredModel = this.model.withStructuredOutput(LatexSchema, {
-        name: "latex_generation",
-      });
+      // 1. Use Structured Output (No more manual JSON parsing!)
+      const structuredModel = this.model.withStructuredOutput(
+        LatexPresentationSchema,
+        {
+          name: "latex_data_generation",
+        },
+      );
 
-      // Generate full prompt
-      const fullPrompt = LATEX_SLIDE_PROMPT(prompt, options);
+      const fullPrompt = LATEX_SLIDE_PROMPT(prompt);
 
-      // Invoke model with structured output
-      const latexBeamer = await structuredModel.invoke([
+      // 2. Invoke AI - Returns structured object automatically
+      const jsonData = await structuredModel.invoke([
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: fullPrompt },
       ]);
 
-      const duration = Date.now() - startTime;
-
-      console.log(" [ AI Service ]: Generated", latexBeamer.title);
       console.log(
-        " [ AI Service ]: LaTeX code length:",
-        latexBeamer.latex_code.length,
+        "[ AI Service ]: Got structured data. Building LaTeX...",
+        `(${jsonData.slides.length} slides)`,
       );
-      console.log(" Generation time:", duration, "ms");
 
-      // Zod already validated, now do additional business logic validation
-      this.validateLatexBusinessRules(latexBeamer);
+      // 3. Build LaTeX from structured data (type-safe!)
+      const latexCode = this.buildLatexFromJSON(jsonData);
 
-      return latexBeamer;
+      // Create the final result
+      const result: LatexData = {
+        title: jsonData.presentationTitle,
+        latex_code: latexCode,
+      };
+
+      const duration = Date.now() - startTime;
+      console.log(
+        "[ AI Service ]: Generated LaTeX:",
+        result.title,
+        `(${latexCode.length} chars)`,
+      );
+      console.log("Generation time:", duration, "ms");
+
+      // Validate the LaTeX code
+      this.validateLatexBusinessRules(result);
+
+      return result;
     } catch (error: any) {
-      console.error(" [ AI Service latex Error ]:", error);
+      console.error("[ AI Service LaTeX Error ]:", error);
 
       // Handle Zod validation errors
       if (error.name === "ZodError") {
@@ -295,11 +313,12 @@ class AIService {
         throw new Error("AI generation timed out. Please try again.");
       }
 
-      throw new Error(`AI generation failed: ${error.message}`);
+      throw new Error(`LaTeX generation failed: ${error.message}`);
     }
   }
+
   /**
-   * Generate LaTeX content with retry logic (for production)
+   * Generate LaTeX with retry logic (for production)
    */
   async generateLatexContentWithRetry(
     prompt: string,
@@ -307,6 +326,7 @@ class AIService {
     maxRetries: number = 3,
   ): Promise<LatexData> {
     let lastError: Error | null = null;
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`Attempt ${attempt}/${maxRetries}`);
@@ -314,14 +334,140 @@ class AIService {
       } catch (error: any) {
         lastError = error;
         console.error(`Attempt ${attempt} failed:`, error.message);
+
         if (attempt < maxRetries) {
           const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
-          console.log(`Retrying in ${delay}ms...`);
+          console.log(`⏳ Retrying in ${delay}ms...`);
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
+
     throw lastError || new Error("All retry attempts failed");
+  }
+
+  // ================================
+  //        Handle Latex
+  // ================================
+
+  /**
+   * Escape LaTeX special characters (standard approach)
+   * Simply add backslash before special characters, no text replacement
+   */
+  private escapeLatex(text: string): string {
+    if (!text) return "";
+    return text
+      .replace(/\\/g, "\\textbackslash{}") // Backslash → \\
+      .replace(/&/g, "\\&") // Ampersand
+      .replace(/%/g, "\\%") // Percent
+      .replace(/\$/g, "\\$") // Dollar
+      .replace(/#/g, "\\#") // Hash
+      .replace(/_/g, "\\_") // Underscore
+      .replace(/\{/g, "\\{") // Left brace
+      .replace(/\}/g, "\\}") // Right brace
+      .replace(/\^/g, "\\^{}") // Caret (needs {})
+      .replace(/~/g, "\\~{}") // Tilde (needs {})
+      .replace(/`/g, "'") // Backtick → single quote (fix backtick issue)
+      .replace(/--/g, "-"); // Double dash → single dash (fix double dash)
+  }
+
+  /**
+   * Format text with Markdown support
+   * Process: 1. Escape LaTeX → 2. Convert Markdown (**text** → \textbf{text})
+   */
+  private formatText(text: string): string {
+    if (!text) return "";
+
+    // Step 1: Escape LaTeX special characters first
+    let formatted = this.escapeLatex(text);
+
+    // Step 2: Convert Markdown bold **text** to \textbf{text}
+    // Match **text** but not ****
+    formatted = formatted.replace(/\*\*(.+?)\*\*/g, "\\textbf{$1}");
+
+    return formatted;
+  }
+
+  /**
+   * Build LaTeX Beamer code from JSON structure
+   * This function constructs a complete LaTeX document from the AI-generated JSON
+   */
+
+  // Note: For Vietnamese support, uncomment the following lines:
+  // \\usepackage[T5]{fontenc}
+  // \\usepackage[vietnamese]{babel}
+
+  private buildLatexFromJSON(data: LatexPresentationData): string {
+    let latex = `\\documentclass[10pt]{beamer}
+\\usetheme{metropolis}
+\\usepackage{lmodern}
+\\usepackage{xcolor}
+\\usepackage[utf8]{inputenc}
+\\usepackage{listings}
+
+\\lstset{
+  basicstyle=\\ttfamily\\small,
+  breaklines=true,
+  breakatwhitespace=true,
+  columns=flexible,
+  keepspaces=true,
+  showstringspaces=false,
+  frame=single,
+  backgroundcolor=\\color{lightgray!20}
+}
+
+\\title{${this.formatText(data.presentationTitle)}}
+\\subtitle{${this.formatText(data.subtitle)}}
+\\author{AI Generator}
+\\date{\\today}
+\\begin{document}
+
+\\begin{frame}
+\\titlepage
+\\end{frame}
+
+\\begin{frame}[fragile]{Table of Contents}
+\\tableofcontents
+\\end{frame}
+`;
+
+    // Build each slide from JSON
+    for (const slide of data.slides) {
+      // ALWAYS add [fragile] to ALL frames (prevents "Runaway argument" error)
+      latex += `\\section{${this.formatText(slide.title)}}\n`;
+      latex += `\\begin{frame}[fragile]{${this.formatText(slide.title)}}\n`;
+
+      // Add bullet points with formatText (supports Markdown bold)
+      if (slide.bullets && slide.bullets.length > 0) {
+        latex += `  \\begin{itemize}\n`;
+        for (const point of slide.bullets) {
+          latex += `    \\item ${this.formatText(point)}\n`;
+        }
+        latex += `  \\end{itemize}\n`;
+      }
+
+      // Add code snippet with lstlisting (auto line wrapping, no overflow)
+      if (slide.codeSnippet) {
+        latex += `  \\begin{exampleblock}{Code Example}\n`;
+        latex += `    \\begin{lstlisting}\n`;
+        latex += slide.codeSnippet + "\n";
+        latex += `    \\end{lstlisting}\n`;
+        latex += `  \\end{exampleblock}\n`;
+      }
+
+      latex += `\\end{frame}\n\n`;
+    }
+
+    // Final thank you slide
+    latex += `
+\\begin{frame}[standout]
+  \\centering
+  \\Huge Thank You!
+\\end{frame}
+
+\\end{document}`;
+
+    return latex;
   }
 }
 
