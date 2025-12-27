@@ -46,7 +46,7 @@ class UsageLogRepository {
             if (s === 'error') where.status = ActionStatus.FAILED;
             else if (s === 'warning') where.status = ActionStatus.PENDING;
             else if (s === 'info') where.status = ActionStatus.SUCCESS;
-            else where.status = options.status; 
+            else where.status = options.status;
         }
 
         if (options.startDate || options.endDate) {
@@ -59,20 +59,32 @@ class UsageLogRepository {
             }
         }
 
-        // Tìm kiếm text trong id, errorMessage, metadata
+        // Tìm kiếm text trong id, errorMessage, metadata **và** mở rộng tìm kiếm theo tên user
         if (options.q) {
             const q = `%${options.q}%`;
+
+            // Thử tìm user có name phù hợp để lấy userId (tăng khả năng tìm theo tên người dùng)
             try {
+                const User = require('../models/User').default;
+                const matchedUsers = await User.findAll({ where: { name: { [Op.iLike]: q } }, attributes: ['id'] });
+                const userIds = matchedUsers.map((u: any) => u.id);
+
                 const Sequelize = require('sequelize');
                 // id là uuid trong db, cần cast sang text để dùng iLike
-                where[Op.or] = [
+                const orClauses: any[] = [
                     Sequelize.where(Sequelize.cast(Sequelize.col('id'), 'text'), { [Op.iLike]: q }),
                     { errorMessage: { [Op.iLike]: q } },
                     Sequelize.where(Sequelize.cast(Sequelize.col('metadata'), 'text'), { [Op.iLike]: q })
                 ];
+
+                if (userIds.length > 0) {
+                    orClauses.push({ userId: { [Op.in]: userIds } });
+                }
+
+                where[Op.or] = orClauses;
             } catch (err: any) {
-                // Một số db ko hỗ trợ cast metadata, log cảnh báo và fallback
-                console.warn('Search cast failed (metadata cast failed):', err?.message ?? err);
+                // Fallback khi cast metadata hoặc lookup user gặp lỗi
+                console.warn('Search cast/user lookup failed:', err?.message ?? err);
                 try {
                     const Sequelize = require('sequelize');
                     where[Op.or] = [
@@ -171,6 +183,7 @@ class UsageLogRepository {
         totalTokens: number;
         totalCost: number;
         totalUsers: number;
+        uniqueUserIds: string[];
         successRate: number;
         byActionType: { [key: string]: number };
     }> {
@@ -194,8 +207,8 @@ class UsageLogRepository {
         const successCount = logs.filter(log => log.status === ActionStatus.SUCCESS).length;
         const successRate = totalCalls > 0 ? (successCount / totalCalls) * 100 : 0;
 
-        const uniqueUsers = new Set(logs.map(log => log.userId));
-        const totalUsers = uniqueUsers.size;
+        const uniqueUsers = Array.from(new Set(logs.map(log => log.userId)));
+        const totalUsers = uniqueUsers.length;
 
         const byActionType: { [key: string]: number } = {};
         logs.forEach(log => {
@@ -207,6 +220,7 @@ class UsageLogRepository {
             totalTokens,
             totalCost,
             totalUsers,
+            uniqueUserIds: uniqueUsers,
             successRate,
             byActionType,
         };
