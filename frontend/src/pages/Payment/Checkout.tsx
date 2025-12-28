@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getCurrentUser } from '../../utils/auth';
 import { upgradeToVIP } from '../../api/user';
 import { message } from 'antd';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface CheckoutState {
   billingPeriod?: 'monthly' | 'yearly';
@@ -22,7 +22,21 @@ const Checkout: React.FC = () => {
   const total = price + tax;
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'momo'>('card');
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const paymentTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup interval and timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+      if (paymentTimeoutRef.current) {
+        clearTimeout(paymentTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handlePaymentSuccess = async () => {
     setIsProcessing(true);
@@ -47,15 +61,81 @@ const Checkout: React.FC = () => {
       } else {
         message.error(response.message || 'Failed to process payment');
         setIsProcessing(false);
+        setCountdown(null);
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
+        }
+        if (paymentTimeoutRef.current) {
+          clearTimeout(paymentTimeoutRef.current);
+          paymentTimeoutRef.current = null;
+        }
       }
     } catch (error: any) {
       message.error(error.message || 'Failed to process payment');
       setIsProcessing(false);
+      setCountdown(null);
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      if (paymentTimeoutRef.current) {
+        clearTimeout(paymentTimeoutRef.current);
+        paymentTimeoutRef.current = null;
+      }
     }
   };
 
-  // Generate QR code data (simple demo - in production, this would be a real payment QR)
-  const qrData = `LectGen-AI|VIP|${billingPeriod}|${total}|${Date.now()}`;
+  const handlePaymentButtonClick = () => {
+    if (isProcessing || countdown !== null) return;
+
+    setIsProcessing(true);
+    setCountdown(15);
+
+    // Start countdown
+    countdownIntervalRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+          }
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // After 15 seconds, process payment
+    paymentTimeoutRef.current = setTimeout(() => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      handlePaymentSuccess();
+      paymentTimeoutRef.current = null;
+    }, 15000);
+  };
+
+  // Generate QR code data for Momo payment
+  // Bạn có thể thay đổi định dạng này theo yêu cầu của Momo API hoặc mã QR thực tế của bạn
+  // Ví dụ: có thể là URL thanh toán Momo, hoặc chuỗi dữ liệu theo format của Momo
+  const generateQRData = () => {
+    // Option 1: Sử dụng format hiện tại (custom format)
+    // return `LectGen-AI|VIP|${billingPeriod}|${total}|${Date.now()}`;
+    
+    // Option 2: Sử dụng Momo payment URL (ví dụ - thay bằng URL thực tế)
+    // const orderId = `ORD-${Date.now()}`;
+    // return `https://payment.momo.vn/pay?amount=${total}&orderId=${orderId}`;
+    
+    // Option 3: Sử dụng Momo QR code string format (ví dụ)
+    // return `00020101021238570010A00000072701270006970436011406970436011506970436011606970436011706970436011806970436011906970436011100697043601${total}53037045404${total}5802VN62140706970436016630697043601`;
+    
+    // Hiện tại sử dụng Option 1
+    return `LectGen-AI|VIP|${billingPeriod}|${total}|${Date.now()}`;
+  };
+  
+  const qrData = generateQRData();
 
   return (
     <div className="bg-background-light dark:bg-background-dark text-[#0d131b] dark:text-white min-h-screen flex flex-col font-display">
@@ -157,181 +237,74 @@ const Checkout: React.FC = () => {
             <div className="bg-white dark:bg-[#1A2633] rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-6 lg:p-8">
               <h1 className="text-2xl font-black tracking-tight text-[#0d131b] dark:text-white mb-6">Payment Details</h1>
 
-              {/* Tabs */}
-              <div className="flex gap-4 border-b border-slate-200 dark:border-slate-700 mb-8">
-                <button 
-                  className={`flex items-center gap-2 pb-3 px-1 border-b-[3px] transition-colors ${
-                    paymentMethod === 'card' 
-                      ? 'border-primary text-primary font-bold' 
-                      : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium'
-                  } text-sm`}
-                  onClick={() => setPaymentMethod('card')}
+              {/* QR Code Payment */}
+              <div className="space-y-6 mb-6">
+                <div className="text-center">
+                  <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
+                    Quét mã QR để thanh toán
+                  </p>
+                  <div className="bg-white p-6 rounded-xl border-2 border-slate-200 dark:border-slate-700 inline-block">
+                    <div className="w-64 h-64 bg-white rounded-lg flex items-center justify-center mb-4 p-4">
+                      <QRCodeSVG
+                        value={qrData}
+                        size={256}
+                        level="H"
+                        includeMargin={false}
+                        fgColor="#000000"
+                        bgColor="#FFFFFF"
+                      />
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 break-all max-w-xs mx-auto">
+                      {qrData}
+                    </p>
+                  </div>
+                </div>
+                {/* Loading overlay khi đang xử lý */}
+                {isProcessing && countdown !== null && (
+                  <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center justify-center gap-3 mb-3">
+                      <div className="relative">
+                        <div className="w-8 h-8 border-4 border-blue-200 dark:border-blue-700 border-t-blue-500 dark:border-t-blue-400 rounded-full animate-spin"></div>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                          Đang xử lý thanh toán...
+                        </p>
+                        {countdown > 0 && (
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                            Vui lòng đợi {countdown} giây
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {/* Progress bar */}
+                    <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="bg-blue-500 dark:bg-blue-400 h-2 rounded-full transition-all duration-1000 ease-linear"
+                        style={{ width: `${((15 - (countdown || 0)) / 15) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+                
+                <button
+                  className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 px-6 rounded-lg shadow-md transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handlePaymentButtonClick}
+                  disabled={isProcessing}
                 >
-                  <span className="material-symbols-outlined text-[20px]">credit_card</span>
-                  Credit Card
-                </button>
-                <button 
-                  className={`flex items-center gap-2 pb-3 px-1 border-b-[3px] transition-colors ${
-                    paymentMethod === 'paypal' 
-                      ? 'border-primary text-primary font-bold' 
-                      : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium'
-                  } text-sm`}
-                  onClick={() => setPaymentMethod('paypal')}
-                >
-                  <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>
-                  PayPal
-                </button>
-                <button 
-                  className={`flex items-center gap-2 pb-3 px-1 border-b-[3px] transition-colors ${
-                    paymentMethod === 'momo' 
-                      ? 'border-primary text-primary font-bold' 
-                      : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium'
-                  } text-sm`}
-                  onClick={() => setPaymentMethod('momo')}
-                >
-                  <span className="material-symbols-outlined text-[20px]">payments</span>
-                  Momo
+                  {isProcessing && countdown !== null ? (
+                    <>
+                      <span className="material-symbols-outlined animate-spin">refresh</span>
+                      <span>Đang xử lý... ({countdown}s)</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined">check_circle</span>
+                      <span>Đã thanh toán thành công</span>
+                    </>
+                  )}
                 </button>
               </div>
-
-              {/* QR Code Payment (Demo) */}
-              {paymentMethod === 'momo' && (
-                <div className="space-y-6 mb-6">
-                  <div className="text-center">
-                    <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
-                      Quét mã QR để thanh toán
-                    </p>
-                    <div className="bg-white p-6 rounded-xl border-2 border-slate-200 dark:border-slate-700 inline-block">
-                      <div className="w-64 h-64 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center mb-4">
-                        {/* Simple QR Code representation - in production, use a QR code library */}
-                        <div className="grid grid-cols-8 gap-1 p-4">
-                          {Array.from({ length: 64 }).map((_, i) => (
-                            <div
-                              key={i}
-                              className={`w-6 h-6 rounded-sm ${
-                                Math.random() > 0.5 ? 'bg-slate-900 dark:bg-white' : 'bg-transparent'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-                        {qrData}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 px-6 rounded-lg shadow-md transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={handlePaymentSuccess}
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <span className="material-symbols-outlined animate-spin">refresh</span>
-                        <span>Processing...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="material-symbols-outlined">check_circle</span>
-                        <span>Đã thanh toán thành công</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Credit Card Form (Hidden for demo) */}
-              {paymentMethod === 'card' && (
-                <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handlePaymentSuccess(); }}>
-                  <div className="space-y-1">
-                    <label className="text-sm font-semibold text-[#0d131b] dark:text-slate-200" htmlFor="cardName">Name on Card</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <span className="material-symbols-outlined text-[20px]">person</span>
-                      </div>
-                      <input 
-                        className="block w-full pl-10 rounded-lg border-slate-300 bg-slate-50 dark:bg-slate-800 dark:border-slate-600 focus:border-primary focus:ring-primary dark:text-white sm:text-sm py-2.5 transition-shadow" 
-                        id="cardName" 
-                        placeholder="John Doe" 
-                        type="text"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-semibold text-[#0d131b] dark:text-slate-200" htmlFor="cardNumber">Card Number</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <span className="material-symbols-outlined text-[20px]">credit_card</span>
-                      </div>
-                      <input 
-                        className="block w-full pl-10 pr-10 rounded-lg border-slate-300 bg-slate-50 dark:bg-slate-800 dark:border-slate-600 focus:border-primary focus:ring-primary dark:text-white sm:text-sm py-2.5 transition-shadow" 
-                        id="cardNumber" 
-                        placeholder="0000 0000 0000 0000" 
-                        type="text"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-sm font-semibold text-[#0d131b] dark:text-slate-200" htmlFor="expiry">Expiration Date</label>
-                      <input 
-                        className="block w-full rounded-lg border-slate-300 bg-slate-50 dark:bg-slate-800 dark:border-slate-600 focus:border-primary focus:ring-primary dark:text-white sm:text-sm py-2.5 transition-shadow" 
-                        id="expiry" 
-                        placeholder="MM / YY" 
-                        type="text"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-sm font-semibold text-[#0d131b] dark:text-slate-200" htmlFor="cvc">CVC / CVV</label>
-                      <input 
-                        className="block w-full rounded-lg border-slate-300 bg-slate-50 dark:bg-slate-800 dark:border-slate-600 focus:border-primary focus:ring-primary dark:text-white sm:text-sm py-2.5 transition-shadow" 
-                        id="cvc" 
-                        placeholder="123" 
-                        type="text"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <button
-                    className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-blue-600 text-white font-bold py-3.5 px-6 rounded-lg shadow-md shadow-blue-500/20 transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
-                    type="submit"
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <span className="material-symbols-outlined animate-spin">refresh</span>
-                        <span>Processing...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Pay ${total.toFixed(2)}</span>
-                        <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
-                      </>
-                    )}
-                  </button>
-                </form>
-              )}
-
-              {/* PayPal (Hidden for demo) */}
-              {paymentMethod === 'paypal' && (
-                <div className="space-y-5">
-                  <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-6 text-center">
-                    <p className="text-slate-600 dark:text-slate-400 mb-4">
-                      PayPal integration coming soon
-                    </p>
-                    <button
-                      className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-blue-600 text-white font-bold py-3.5 px-6 rounded-lg shadow-md transition-all active:scale-[0.99]"
-                      onClick={handlePaymentSuccess}
-                      disabled={isProcessing}
-                    >
-                      {isProcessing ? 'Processing...' : 'Pay with PayPal (Demo)'}
-                    </button>
-                  </div>
-                </div>
-              )}
 
               <p className="text-center text-xs text-slate-500 mt-4">
                 By clicking the button above, you agree to our <a className="text-primary hover:underline" href="#">Terms of Service</a> and <a className="text-primary hover:underline" href="#">Privacy Policy</a>.
@@ -343,7 +316,7 @@ const Checkout: React.FC = () => {
 
       {/* Simple Footer */}
       <footer className="py-6 text-center text-sm text-slate-400">
-        <p>© 2024 LectGen-AI. All rights reserved.</p>
+        <p>© 2025 LectGen-AI. All rights reserved.</p>
       </footer>
     </div>
   );

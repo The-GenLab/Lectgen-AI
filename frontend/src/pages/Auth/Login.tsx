@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import styles from './Login.module.css';
 import { authApi } from '../../api/auth';
-import { getMaintenanceMode } from '../../api/settings';
 import {
   AuthHeader,
   AuthFooter,
@@ -20,25 +19,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showError, setShowError] = useState(false);
-  const [isMaintenance, setIsMaintenance] = useState(false);
   const navigate = useNavigate();
-
-  // Check maintenance mode on mount (non-blocking)
-  useEffect(() => {
-    const checkMaintenance = async () => {
-      try {
-        const maintenanceMode = await getMaintenanceMode();
-        if (maintenanceMode) {
-          setIsMaintenance(true);
-        }
-      } catch (error) {
-        // Silently fail - maintenance check is not critical for login page
-        // Backend will handle maintenance mode during actual login
-        console.warn('Failed to check maintenance mode (non-critical):', error);
-      }
-    };
-    checkMaintenance();
-  }, []);
 
   const handleGoogleLogin = () => {
     // Redirect to backend Google OAuth endpoint

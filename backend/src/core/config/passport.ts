@@ -67,12 +67,12 @@ export const configureGoogleAuth = () => {
   );
 
  
-  passport.serializeUser((user: any, done) => {
+  passport.serializeUser((user: any, done: (err: any, id?: any) => void) => {
     done(null, user.id);
   });
 
 
-  passport.deserializeUser(async (id: string, done: any) => {
+  passport.deserializeUser(async (id: string, done: (err: any, user?: any) => void) => {
     try {
       const user = await userRepository.findById(id);
       done(null, user || undefined);

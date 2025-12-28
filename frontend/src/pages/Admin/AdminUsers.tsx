@@ -88,7 +88,7 @@ const AdminUsers = () => {
         return Math.min(Math.round((user.slidesGenerated / user.maxSlidesPerMonth) * 100), 100);
     };
 
-    const getUserStatus = (user: UserWithStats): 'active' | 'inactive' | 'banned' => {
+    const getUserStatus = (_user: UserWithStats): 'active' | 'inactive' | 'banned' => {
         // For now, all users are active. Can be extended later.
         return 'active';
     };
