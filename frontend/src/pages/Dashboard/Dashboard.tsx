@@ -33,7 +33,13 @@ import { uploadTemplateImage } from '../../api/template';
 import { getCurrentUser, logout } from '../../utils/auth';
 import { getProfile } from '../../api/user';
 import { getAvatarUrl } from '../../utils/file';
-import { sendMessage, type Message as ChatMessage } from '../../api/chat';
+import { 
+  sendMessage, 
+  getConversations, 
+  getConversationMessages,
+  type Message as ChatMessage,
+  type Conversation 
+} from '../../api/chat';
 import { message as antdMessage } from 'antd';
 import styles from './Dashboard.module.css';
 
@@ -47,22 +53,34 @@ export default function Dashboard() {
   const [conversationTitle, setConversationTitle] = useState('New Conversation');
   const [activeTab, setActiveTab] = useState('text');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
 
-  // Mock data
-  const chatHistory = {
-    today: [
-      { id: '1', title: 'Marketing Strategy 2024', active: true }
-    ],
-    yesterday: [
-      { id: '2', title: 'Biology 101 Lecture' },
-      { id: '3', title: 'Startup Pitch Deck' }
-    ],
-    previous: [
-      { id: '4', title: 'History 101: WWII' },
-      { id: '5', title: 'Project Alpha Roadmap' }
-    ]
+  // Group conversations by date
+  const groupConversationsByDate = () => {
+    const now = new Date();
+    const today: Conversation[] = [];
+    const yesterday: Conversation[] = [];
+    const previous: Conversation[] = [];
+
+    conversations.forEach(conv => {
+      const convDate = new Date(conv.updatedAt);
+      const diffDays = Math.floor((now.getTime() - convDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) {
+        today.push(conv);
+      } else if (diffDays === 1) {
+        yesterday.push(conv);
+      } else if (diffDays <= 7) {
+        previous.push(conv);
+      }
+    });
+
+    return { today, yesterday, previous };
   };
+
+  const chatHistory = groupConversationsByDate();
 
   const suggestions = [
     { icon: <ThunderboltOutlined />, label: 'Startup Pitch' },
@@ -70,7 +88,7 @@ export default function Dashboard() {
     { icon: <FileTextOutlined />, label: 'Quarterly Review' }
   ];
 
-  // Load user info on mount
+  // Load user info and conversations on mount
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -92,8 +110,23 @@ export default function Dashboard() {
         setCurrentUser(user);
       }
     };
+
+    const loadConversations = async () => {
+      setIsLoadingConversations(true);
+      try {
+        const response = await getConversations();
+        if (response.success && response.data?.conversations) {
+          setConversations(response.data.conversations);
+        }
+      } catch (error) {
+        console.error('Failed to load conversations:', error);
+      } finally {
+        setIsLoadingConversations(false);
+      }
+    };
     
     loadUserData();
+    loadConversations();
   }, []);
 
   // Get user display name
@@ -165,6 +198,32 @@ export default function Dashboard() {
     }
   };
 
+  // Load messages for a conversation
+  const handleSelectConversation = async (conv: Conversation) => {
+    if (conversationId === conv.id) return; // Already selected
+
+    setIsLoading(true);
+    try {
+      const msgs = await getConversationMessages(conv.id);
+      setMessages(msgs);
+      setConversationId(conv.id);
+      setConversationTitle(conv.title);
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+      antdMessage.error('Không thể tải tin nhắn');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Create new conversation
+  const handleNewChat = () => {
+    setConversationId(undefined);
+    setConversationTitle('New Conversation');
+    setMessages([]);
+    setInput('');
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -184,6 +243,9 @@ export default function Dashboard() {
       if (!conversationId) {
         setConversationId(response.data.conversation.id);
         setConversationTitle(response.data.conversation.title);
+        
+        // Add new conversation to sidebar
+        setConversations([response.data.conversation, ...conversations]);
       }
 
       // Add both user and assistant messages
@@ -254,6 +316,9 @@ export default function Dashboard() {
       if (!conversationId) {
         setConversationId(response.data.conversation.id);
         setConversationTitle(response.data.conversation.title);
+        
+        // Add new conversation to sidebar
+        setConversations([response.data.conversation, ...conversations]);
       }
 
       // Add both user and assistant messages
@@ -299,50 +364,80 @@ export default function Dashboard() {
             size="large"
             block
             className={styles.newPresentationBtn}
+            onClick={handleNewChat}
           >
             New Presentation
           </Button>
 
           {/* Chat History */}
           <div className={styles.chatHistory}>
-            <div className={styles.historySection}>
-              <Text className={styles.sectionLabel}>TODAY</Text>
-              <div>
-                {chatHistory.today.map((item, index) => (
-                  <div
-                    key={index}
-                    className={item.active ? styles.chatItemActive : styles.chatItem}
-                  >
-                    <FileTextOutlined className={styles.chatIcon} />
-                    <Text className={styles.chatTitle}>{item.title}</Text>
-                  </div>
-                ))}
+            {isLoadingConversations ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <Text type="secondary">Loading...</Text>
               </div>
-            </div>
+            ) : (
+              <>
+                {chatHistory.today.length > 0 && (
+                  <div className={styles.historySection}>
+                    <Text className={styles.sectionLabel}>TODAY</Text>
+                    <div>
+                      {chatHistory.today.map((conv) => (
+                        <div
+                          key={conv.id}
+                          className={conversationId === conv.id ? styles.chatItemActive : styles.chatItem}
+                          onClick={() => handleSelectConversation(conv)}
+                        >
+                          <FileTextOutlined className={styles.chatIcon} />
+                          <Text className={styles.chatTitle}>{conv.title}</Text>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-            <div className={styles.historySection}>
-              <Text className={styles.sectionLabel}>YESTERDAY</Text>
-              <div>
-                {chatHistory.yesterday.map((item, index) => (
-                  <div key={index} className={styles.chatItem}>
-                    <FileTextOutlined className={styles.chatIcon} />
-                    <Text className={styles.chatTitle}>{item.title}</Text>
+                {chatHistory.yesterday.length > 0 && (
+                  <div className={styles.historySection}>
+                    <Text className={styles.sectionLabel}>YESTERDAY</Text>
+                    <div>
+                      {chatHistory.yesterday.map((conv) => (
+                        <div 
+                          key={conv.id} 
+                          className={conversationId === conv.id ? styles.chatItemActive : styles.chatItem}
+                          onClick={() => handleSelectConversation(conv)}
+                        >
+                          <FileTextOutlined className={styles.chatIcon} />
+                          <Text className={styles.chatTitle}>{conv.title}</Text>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                )}
 
-            <div className={styles.historySection}>
-              <Text className={styles.sectionLabel}>PREVIOUS 7 DAYS</Text>
-              <div>
-                {chatHistory.previous.map((item, index) => (
-                  <div key={index} className={styles.chatItem}>
-                    <FileTextOutlined className={styles.chatIcon} />
-                    <Text className={styles.chatTitle}>{item.title}</Text>
+                {chatHistory.previous.length > 0 && (
+                  <div className={styles.historySection}>
+                    <Text className={styles.sectionLabel}>PREVIOUS 7 DAYS</Text>
+                    <div>
+                      {chatHistory.previous.map((conv) => (
+                        <div 
+                          key={conv.id} 
+                          className={conversationId === conv.id ? styles.chatItemActive : styles.chatItem}
+                          onClick={() => handleSelectConversation(conv)}
+                        >
+                          <FileTextOutlined className={styles.chatIcon} />
+                          <Text className={styles.chatTitle}>{conv.title}</Text>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                )}
+
+                {conversations.length === 0 && !isLoadingConversations && (
+                  <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <Text type="secondary">No conversations yet</Text>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Bottom Section */}
@@ -498,7 +593,7 @@ export default function Dashboard() {
                                   size="large"
                                   className={styles.downloadBtn}
                                   onClick={() => {
-                                    // Download LaTeX as .tex file
+                                    // Download LaTeX as .tex file from contentText (raw code)
                                     const blob = new Blob([msg.contentText || ''], { type: 'text/plain' });
                                     const url = URL.createObjectURL(blob);
                                     const a = document.createElement('a');
@@ -506,6 +601,7 @@ export default function Dashboard() {
                                     a.download = `presentation-${msg.id}.tex`;
                                     a.click();
                                     URL.revokeObjectURL(url);
+                                    antdMessage.success('Đã tải xuống!');
                                   }}
                                 >
                                   Download LaTeX
@@ -514,7 +610,7 @@ export default function Dashboard() {
                                   icon={<EditOutlined />}
                                   size="large"
                                   onClick={() => {
-                                    // Copy LaTeX to clipboard
+                                    // Copy LaTeX to clipboard from contentText
                                     navigator.clipboard.writeText(msg.contentText || '');
                                     antdMessage.success('Đã copy LaTeX code!');
                                   }}

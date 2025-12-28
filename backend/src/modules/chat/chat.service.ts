@@ -4,6 +4,7 @@ import Message from '../../core/models/Message';
 import { MessageRole, MessageType } from '../../shared/constants';
 import aiService from '../ai/ai.service';
 import conversationService from '../conversation/conversation.service';
+import { storageService } from '../storage';
 
 interface SendMessageParams {
   userId: string;
@@ -101,12 +102,30 @@ class ChatService {
     console.log('[ChatService] Generating LaTeX for prompt:', prompt.substring(0, 100));
     const latexData = await aiService.generateLatexContent(prompt);
 
-    // 5. Save assistant message with LaTeX
+    // 5. Upload LaTeX file to MinIO and save both code + URL
+    const latexFileName = `${conversation.id}-${Date.now()}.tex`;
+    const latexBuffer = Buffer.from(latexData.latex_code, 'utf-8');
+    
+    const objectName = await storageService.uploadFile(
+      'generated-pdfs',
+      latexBuffer,
+      latexFileName,
+      'text/plain'
+    );
+
+    // Save relative path: /generated-pdfs/uuid-filename.tex
+    const latexFileUrl = `/generated-pdfs/${objectName}`;
+    console.log('[ChatService] LaTeX saved to MinIO:', latexFileUrl);
+
+    // 6. Save assistant message with BOTH raw LaTeX (for display) and file URL
+    // contentText: raw LaTeX code (for display/copy)
+    // pdfUrl: file URL in MinIO (for download)
     const assistantMessage = await messageRepository.create({
       conversationId: conversation.id,
       role: MessageRole.ASSISTANT,
       messageType: MessageType.TEXT,
-      contentText: latexData.latex_code,
+      contentText: latexData.latex_code, // Keep raw LaTeX code
+      pdfUrl: latexFileUrl, // Save MinIO URL for download
       slideCount: this.countSlides(latexData.latex_code),
     });
 
