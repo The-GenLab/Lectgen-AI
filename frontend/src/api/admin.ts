@@ -144,3 +144,33 @@ export const updateUserQuota = async (
 export const updateUserRole = async (userId: string, role: string): Promise<void> => {
     await axios.patch(`${API_BASE_URL}/admin/users/${userId}/role`, { role });
 };
+
+/**
+ * Delete user
+ */
+export const deleteUser = async (userId: string): Promise<void> => {
+    await axios.delete(`${API_BASE_URL}/users/${userId}`);
+};
+
+/**
+ * Reset user password (admin only)
+ */
+export const resetUserPassword = async (userId: string, newPassword: string): Promise<void> => {
+    await axios.post(`${API_BASE_URL}/admin/users/${userId}/reset-password`, { newPassword });
+};
+
+/**
+ * Upload avatar for user (admin only)
+ */
+export const uploadUserAvatar = async (userId: string, file: File): Promise<{ avatarUrl: string }> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const response = await axios.post(`${API_BASE_URL}/admin/users/${userId}/avatar`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+
+    return response.data.data;
+};

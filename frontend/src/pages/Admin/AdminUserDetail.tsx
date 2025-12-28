@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AdminLayout from '../../components/AdminLayout';
-import { getUserStats, getUsageLogs, updateUserRole, updateUserQuota } from '../../api/admin';
+import { getUserStats, getUsageLogs, updateUserRole, updateUserQuota, resetUserPassword, uploadUserAvatar } from '../../api/admin';
 import { getAvatarUrl } from '../../utils/file';
 import type { UsageLog } from '../../api/admin';
 
@@ -31,6 +31,11 @@ const AdminUserDetail = () => {
     const [userData, setUserData] = useState<UserDetailData | null>(null);
     const [recentLogs, setRecentLogs] = useState<UsageLog[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -263,12 +268,41 @@ const AdminUserDetail = () => {
                                         </div>
                                     </div>
                                     <div className="w-full space-y-3">
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file && id) {
+                                                    try {
+                                                        setUploadingAvatar(true);
+                                                        await uploadUserAvatar(id, file);
+                                                        await fetchUserData();
+                                                        alert('Avatar updated successfully');
+                                                    } catch (err) {
+                                                        alert('Failed to upload avatar');
+                                                    } finally {
+                                                        setUploadingAvatar(false);
+                                                        if (fileInputRef.current) {
+                                                            fileInputRef.current.value = '';
+                                                        }
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                        <button 
+                                            className="w-full flex justify-center items-center gap-2 px-4 py-2 bg-background-light dark:bg-slate-800 text-text-main dark:text-white text-sm font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={uploadingAvatar}
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">photo_camera</span>
+                                            {uploadingAvatar ? 'Uploading...' : 'Change Avatar'}
+                                        </button>
                                         <button 
                                             className="w-full flex justify-center items-center gap-2 px-4 py-2 bg-background-light dark:bg-slate-800 text-text-main dark:text-white text-sm font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
-                                            onClick={() => {
-                                                // TODO: Implement reset password
-                                                alert('Reset password functionality coming soon');
-                                            }}
+                                            onClick={() => setShowResetPasswordModal(true)}
                                         >
                                             <span className="material-symbols-outlined text-[18px]">lock_reset</span>
                                             Reset Password
@@ -554,6 +588,59 @@ const AdminUserDetail = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Reset Password Modal */}
+                {showResetPasswordModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+                            <h3 className="text-lg font-bold text-text-main dark:text-white mb-4">Reset Password</h3>
+                            <p className="text-sm text-text-secondary mb-4">
+                                Enter a new password for {user.email}. Password must be at least 12 characters.
+                            </p>
+                            <input
+                                type="password"
+                                className="w-full px-4 py-2 border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-slate-700 text-text-main dark:text-white mb-4"
+                                placeholder="New password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                            />
+                            <div className="flex gap-3 justify-end">
+                                <button
+                                    className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-main transition-colors"
+                                    onClick={() => {
+                                        setShowResetPasswordModal(false);
+                                        setNewPassword('');
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
+                                    disabled={resetPasswordLoading || newPassword.length < 12}
+                                    onClick={async () => {
+                                        if (newPassword.length < 12) {
+                                            alert('Password must be at least 12 characters');
+                                            return;
+                                        }
+                                        try {
+                                            setResetPasswordLoading(true);
+                                            await resetUserPassword(id!, newPassword);
+                                            alert('Password reset successfully');
+                                            setShowResetPasswordModal(false);
+                                            setNewPassword('');
+                                        } catch (err: any) {
+                                            alert(err.response?.data?.message || 'Failed to reset password');
+                                        } finally {
+                                            setResetPasswordLoading(false);
+                                        }
+                                    }}
+                                >
+                                    {resetPasswordLoading ? 'Resetting...' : 'Reset Password'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </AdminLayout>
     );

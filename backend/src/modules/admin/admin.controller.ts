@@ -158,6 +158,47 @@ class AdminController {
             return errorResponse(res, error.message || 'Failed to update user role', 500);
         }
     }
+
+    /**
+     * POST /api/admin/users/:userId/reset-password
+     * Reset password for user (admin only)
+     */
+    async resetUserPassword(req: Request, res: Response) {
+        try {
+            const { userId } = req.params;
+            const { newPassword } = req.body;
+
+            if (!newPassword || typeof newPassword !== 'string') {
+                return errorResponse(res, 'New password is required', 400);
+            }
+
+            const result = await adminService.resetUserPassword(userId, newPassword);
+
+            return successResponse(res, result, 'Password reset successfully');
+        } catch (error: any) {
+            return errorResponse(res, error.message || 'Failed to reset password', 500);
+        }
+    }
+
+    /**
+     * POST /api/admin/users/:userId/avatar
+     * Upload avatar for user (admin only)
+     */
+    async uploadUserAvatar(req: Request, res: Response) {
+        try {
+            const { userId } = req.params;
+
+            if (!req.file) {
+                return errorResponse(res, 'No file uploaded', 400);
+            }
+
+            const result = await adminService.uploadUserAvatar(userId, req.file);
+
+            return successResponse(res, result, 'Avatar uploaded successfully');
+        } catch (error: any) {
+            return errorResponse(res, error.message || 'Failed to upload avatar', 500);
+        }
+    }
 }
 
 export default new AdminController();

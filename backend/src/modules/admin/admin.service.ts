@@ -1,6 +1,9 @@
 import { userRepository, usageLogRepository } from '../../core/repositories';
 import { ActionType, ActionStatus } from '../../core/models/UsageLog';
 import { UserRole } from '../../shared/constants/enums';
+import userService from '../user/user.service';
+import authService from '../auth/auth.service';
+import fileService from '../file/file.service';
 import * as os from 'os';
 
 class AdminService {
@@ -293,6 +296,46 @@ class AdminService {
     return {
       message: 'User role updated successfully',
     };
+  }
+
+  /**
+   * Reset user password (admin only)
+   */
+  async resetUserPassword(userId: string, newPassword: string) {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (newPassword.length < 12) {
+      throw new Error('Password must be at least 12 characters');
+    }
+
+    // @ts-ignore - hashPassword is private but we need it for admin reset
+    const passwordHash = await (authService as any).hashPassword(newPassword);
+    await userRepository.update(userId, { passwordHash: passwordHash as any });
+
+    return {
+      message: 'Password reset successfully',
+    };
+  }
+
+  /**
+   * Upload avatar for user (admin only)
+   */
+  async uploadUserAvatar(userId: string, file: Express.Multer.File) {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const avatarUrl = await fileService.uploadAvatar(file, userId);
+    if (user.avatarUrl) {
+      await fileService.deleteAvatar(user.avatarUrl);
+    }
+
+    const updatedUser = await userService.updateUserAvatar(userId, avatarUrl);
+    return { avatarUrl, user: updatedUser };
   }
 }
 

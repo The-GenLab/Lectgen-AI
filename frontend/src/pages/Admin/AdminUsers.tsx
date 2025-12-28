@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/AdminLayout';
-import { getAllUsers } from '../../api/admin';
+import { getAllUsers, deleteUser } from '../../api/admin';
 import { getAvatarUrl } from '../../utils/file';
 import type { UserWithStats } from '../../api/admin';
 
@@ -94,6 +94,20 @@ const AdminUsers = () => {
     };
 
     const totalPages = Math.ceil(total / pageSize);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (!target.closest('.relative')) {
+                document.querySelectorAll('[id^="user-menu-"]').forEach(menu => {
+                    menu.classList.add('hidden');
+                });
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
     return (
         <AdminLayout>
@@ -294,12 +308,51 @@ const AdminUsers = () => {
                                                             {formatDate(user.createdAt)}
                                                         </td>
                                                         <td className="py-4 px-4 text-right">
-                                                            <button 
-                                                                className="p-1 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                                                                onClick={() => navigate(`/admin/users/${user.id}`)}
-                                                            >
-                                                                <span className="material-symbols-outlined text-[20px]">more_vert</span>
-                                                            </button>
+                                                            <div className="relative inline-block">
+                                                                <button 
+                                                                    className="p-1 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                                                    onClick={() => {
+                                                                        const menu = document.getElementById(`user-menu-${user.id}`);
+                                                                        if (menu) {
+                                                                            menu.classList.toggle('hidden');
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                                                                </button>
+                                                                <div 
+                                                                    id={`user-menu-${user.id}`}
+                                                                    className="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 z-10"
+                                                                >
+                                                                    <button
+                                                                        className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                                                        onClick={() => {
+                                                                            navigate(`/admin/users/${user.id}`);
+                                                                            const menu = document.getElementById(`user-menu-${user.id}`);
+                                                                            if (menu) menu.classList.add('hidden');
+                                                                        }}
+                                                                    >
+                                                                        View Details
+                                                                    </button>
+                                                                    <button
+                                                                        className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                                        onClick={async () => {
+                                                                            if (confirm(`Are you sure you want to delete user "${user.name || user.email}"? This action cannot be undone.`)) {
+                                                                                try {
+                                                                                    await deleteUser(user.id);
+                                                                                    fetchUsers();
+                                                                                } catch (err) {
+                                                                                    alert('Failed to delete user');
+                                                                                }
+                                                                            }
+                                                                            const menu = document.getElementById(`user-menu-${user.id}`);
+                                                                            if (menu) menu.classList.add('hidden');
+                                                                        }}
+                                                                    >
+                                                                        Delete User
+                                                                    </button>
+                                                                </div>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 );

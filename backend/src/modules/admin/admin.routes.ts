@@ -1,9 +1,25 @@
 import { Router } from 'express';
+import multer from 'multer';
 import adminController from './admin.controller';
 import { authenticate, authorize } from '../../shared/middleware/auth.middleware';
 import { UserRole } from '../../shared/constants';
 
 const router = Router();
+
+// Configure multer for file uploads
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'));
+        }
+    },
+});
 
 // All admin routes require authentication and ADMIN role
 router.use(authenticate);
@@ -21,5 +37,9 @@ router.get('/usage-logs', adminController.getUsageLogs);
 router.patch('/users/:userId/quota', adminController.updateUserQuota);
 // PATCH /api/admin/users/:userId/role
 router.patch('/users/:userId/role', adminController.updateUserRole);
+// POST /api/admin/users/:userId/reset-password
+router.post('/users/:userId/reset-password', adminController.resetUserPassword);
+// POST /api/admin/users/:userId/avatar
+router.post('/users/:userId/avatar', upload.single('avatar'), adminController.uploadUserAvatar);
 
 export default router;
