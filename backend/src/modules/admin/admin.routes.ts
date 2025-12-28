@@ -27,6 +27,9 @@ router.use(authorize(UserRole.ADMIN));
 
 // GET /api/admin/stats
 router.get('/stats', adminController.getGlobalStats);
+
+// POST /api/admin/users (Create new user)
+router.post('/users', adminController.createUser);
 // GET /api/admin/users 
 router.get('/users', adminController.getAllUsers);
 // GET /api/admin/users/:userId/stats
@@ -41,5 +44,10 @@ router.patch('/users/:userId/role', adminController.updateUserRole);
 router.post('/users/:userId/reset-password', adminController.resetUserPassword);
 // POST /api/admin/users/:userId/avatar
 router.post('/users/:userId/avatar', upload.single('avatar'), adminController.uploadUserAvatar);
+
+// GET /api/admin/settings
+router.get('/settings', adminController.getSettings);
+// PATCH /api/admin/settings
+router.patch('/settings', adminController.updateSettings);
 
 export default router;

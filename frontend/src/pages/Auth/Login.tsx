@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import styles from './Login.module.css';
 import { authApi } from '../../api/auth';
+import { getMaintenanceMode } from '../../api/settings';
 import {
   AuthHeader,
   AuthFooter,
@@ -19,7 +20,25 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showError, setShowError] = useState(false);
+  const [isMaintenance, setIsMaintenance] = useState(false);
   const navigate = useNavigate();
+
+  // Check maintenance mode on mount (non-blocking)
+  useEffect(() => {
+    const checkMaintenance = async () => {
+      try {
+        const maintenanceMode = await getMaintenanceMode();
+        if (maintenanceMode) {
+          setIsMaintenance(true);
+        }
+      } catch (error) {
+        // Silently fail - maintenance check is not critical for login page
+        // Backend will handle maintenance mode during actual login
+        console.warn('Failed to check maintenance mode (non-critical):', error);
+      }
+    };
+    checkMaintenance();
+  }, []);
 
   const handleGoogleLogin = () => {
     // Redirect to backend Google OAuth endpoint
@@ -37,7 +56,9 @@ export default function Login() {
     setShowError(false);
 
     try {
+      console.log('Attempting login...');
       const result = await authApi.login({ email, password });
+      console.log('Login successful:', result);
 
       const basicUserInfo = {
         id: result.data.user.id,
@@ -46,12 +67,26 @@ export default function Login() {
       };
       sessionStorage.setItem('user', JSON.stringify(basicUserInfo));
 
+      // If login successful, backend already checked maintenance mode
+      // ADMIN users are allowed to login even during maintenance
+      // FREE/VIP users would have been blocked by backend (503 error)
       navigate('/login-success');
     } catch (err: unknown) {
+      console.error('Login error:', err);
       if (err instanceof Error) {
-        setError(err.message);
+        // Check if error is due to maintenance mode
+        if ((err as any).maintenance || err.message.includes('maintenance') || err.message.includes('Maintenance')) {
+          navigate('/maintenance');
+          return;
+        }
+        // Check if it's a network/server connection error
+        if (err.message.includes('Cannot connect to server') || err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+          setError('Cannot connect to server. Please check if the backend is running.');
+        } else {
+          setError(err.message);
+        }
       } else {
-        setError('Incorrect email or password. Please try again.');
+        setError('An unexpected error occurred. Please try again.');
       }
       setShowError(true);
     } finally {

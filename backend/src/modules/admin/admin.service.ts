@@ -4,6 +4,7 @@ import { UserRole } from '../../shared/constants/enums';
 import userService from '../user/user.service';
 import authService from '../auth/auth.service';
 import fileService from '../file/file.service';
+import adminSettingsService from './admin-settings.service';
 import * as os from 'os';
 
 class AdminService {
@@ -336,6 +337,52 @@ class AdminService {
 
     const updatedUser = await userService.updateUserAvatar(userId, avatarUrl);
     return { avatarUrl, user: updatedUser };
+  }
+
+  /**
+   * Create new user (Admin only)
+   */
+  async createUser(data: {
+    name: string;
+    email: string;
+    password: string;
+    role: 'FREE' | 'VIP' | 'ADMIN';
+  }) {
+    // Check if email already exists
+    const existingUser = await userRepository.findByEmail(data.email);
+    if (existingUser) {
+      throw new Error('Email already exists');
+    }
+
+    // Hash password using authService
+    // @ts-ignore - hashPassword is private but we need it for admin create
+    const passwordHash = await (authService as any).hashPassword(data.password);
+
+    // Get monthly free quota for FREE users
+    const monthlyFreeQuota = await adminSettingsService.getMonthlyFreeQuota();
+
+    // Create user
+    const user = await userRepository.create({
+      email: data.email.trim(),
+      name: data.name.trim(),
+      passwordHash,
+      role: data.role as UserRole,
+      maxSlidesPerMonth: data.role === 'FREE' ? monthlyFreeQuota : -1, // -1 means unlimited for VIP/ADMIN
+      slidesGenerated: 0,
+      avatarUrl: null,
+    });
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatarUrl: user.avatarUrl,
+      role: user.role,
+      slidesGenerated: user.slidesGenerated,
+      maxSlidesPerMonth: user.maxSlidesPerMonth,
+      subscriptionExpiresAt: user.subscriptionExpiresAt,
+      createdAt: user.createdAt,
+    };
   }
 }
 

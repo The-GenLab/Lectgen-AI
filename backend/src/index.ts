@@ -15,6 +15,8 @@ import templateRoutes from "./modules/template/template.routes";
 import speechRoutes from "./modules/speech/speech.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import chatRoutes from "./modules/chat/chat.routes";
+import publicSettingsRoutes from "./modules/admin/public-settings.routes";
+import adminSettingsService from "./modules/admin/admin-settings.service";
 import {
   errorHandler,
   notFoundHandler,
@@ -29,11 +31,14 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Using middleware cors to connect Back - Front
+const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+console.log('[Backend] CORS configured for origin:', frontendUrl);
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    methods: ["GET", "POST", "PATCH", "DELETE"],
+    origin: frontendUrl,
+    methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 );
 
@@ -67,6 +72,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/speech", speechRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/chat", chatRoutes); // Chat route - combines conversation + AI
+app.use("/api/settings", publicSettingsRoutes); // Public settings routes (no auth required)
 app.use("/api/admin", adminRoutes);
 
 app.get("/", (req: Request, res: Response) => {
@@ -98,9 +104,14 @@ const startServer = async () => {
     // Initialize MinIO buckets
     await initializeBuckets();
 
+    // Initialize default system settings
+    await adminSettingsService.initializeDefaults();
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
+      console.log(`🌐 API base URL: http://localhost:${PORT}/api`);
+      console.log(`🔗 CORS origin: ${frontendUrl}`);
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error);

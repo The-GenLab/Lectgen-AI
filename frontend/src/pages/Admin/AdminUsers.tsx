@@ -127,8 +127,7 @@ const AdminUsers = () => {
                             <button 
                                 className="inline-flex items-center justify-center h-10 px-5 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-semibold shadow-md shadow-primary/20 transition-all hover:translate-y-[-1px] active:translate-y-[0px]"
                                 onClick={() => {
-                                    // TODO: Implement add new user
-                                    alert('Add New User functionality coming soon');
+                                    navigate('/admin/users/add');
                                 }}
                             >
                                 <span className="material-symbols-outlined text-[20px] mr-2">add</span>

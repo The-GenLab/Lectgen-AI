@@ -1,6 +1,7 @@
 import { userRepository } from '../../core/repositories';
 import User from '../../core/models/User';
 import { UserRole, addMonths, QUOTA } from '../../shared/constants';
+import adminSettingsService from '../admin/admin-settings.service';
 
 class UserService {
   // Get user by ID
@@ -39,10 +40,11 @@ class UserService {
 
   // Downgrade VIP to FREE (when subscription expires)
   async downgradeToFree(userId: string): Promise<User | null> {
+    const monthlyFreeQuota = await adminSettingsService.getMonthlyFreeQuota();
     return await userRepository.update(userId, {
       role: UserRole.FREE,
       subscriptionExpiresAt: null,
-      maxSlidesPerMonth: QUOTA.FREE_USER_MAX_SLIDES,
+      maxSlidesPerMonth: monthlyFreeQuota,
     });
   }
 

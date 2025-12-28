@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import authService from './auth.service';
+import adminSettingsService from '../admin/admin-settings.service';
+import { isAdmin } from '../../shared/constants';
 import passport from '../../core/config/passport';
 
 // Cookie options cho access token
@@ -104,6 +106,16 @@ class AuthController {
       }
 
       const { user, accessToken, refreshToken } = await authService.login({ email, password });
+
+      // Check maintenance mode - ADMIN can always login
+      const settings = await adminSettingsService.getSettings();
+      if (settings.maintenanceMode && !isAdmin(user.role)) {
+        return res.status(503).json({
+          success: false,
+          message: 'System is under maintenance. Please try again later.',
+          maintenance: true,
+        });
+      }
 
       // Set tokens in HTTP-only cookies
       res.cookie('accessToken', accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);

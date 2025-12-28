@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import adminService from './admin.service';
+import adminSettingsService from './admin-settings.service';
 import { successResponse, errorResponse } from '../../shared/utils/response';
 import { ActionType, ActionStatus } from '../../core/models/UsageLog';
 
@@ -21,6 +22,40 @@ class AdminController {
             return successResponse(res, stats, 'Global stats retrieved successfully');
         } catch (error: any) {
             return errorResponse(res, error.message || 'Failed to get global stats', 500);
+        }
+    }
+
+    /**
+     * POST /api/admin/users
+     * Tạo user mới (Admin only)
+     */
+    async createUser(req: Request, res: Response) {
+        try {
+            const { name, email, password, role } = req.body;
+
+            // Validation
+            if (!name || !email || !password) {
+                return errorResponse(res, 'Name, email, and password are required', 400);
+            }
+
+            if (!['FREE', 'VIP', 'ADMIN'].includes(role)) {
+                return errorResponse(res, 'Invalid role. Must be FREE, VIP, or ADMIN', 400);
+            }
+
+            if (password.length < 6) {
+                return errorResponse(res, 'Password must be at least 6 characters', 400);
+            }
+
+            const user = await adminService.createUser({
+                name: name.trim(),
+                email: email.trim(),
+                password,
+                role: role as 'FREE' | 'VIP' | 'ADMIN',
+            });
+
+            return successResponse(res, user, 'User created successfully');
+        } catch (error: any) {
+            return errorResponse(res, error.message || 'Failed to create user', 500);
         }
     }
 
@@ -197,6 +232,62 @@ class AdminController {
             return successResponse(res, result, 'Avatar uploaded successfully');
         } catch (error: any) {
             return errorResponse(res, error.message || 'Failed to upload avatar', 500);
+        }
+    }
+
+    /**
+     * GET /api/admin/settings
+     * Get system settings
+     */
+    async getSettings(req: Request, res: Response) {
+        try {
+            const settings = await adminSettingsService.getSettings();
+            return successResponse(res, settings, 'Settings retrieved successfully');
+        } catch (error: any) {
+            return errorResponse(res, error.message || 'Failed to get settings', 500);
+        }
+    }
+
+    /**
+     * PATCH /api/admin/settings
+     * Update system settings
+     */
+    async updateSettings(req: Request, res: Response) {
+        try {
+            const updates = req.body;
+            
+            // Validate monthlyFreeQuota if provided
+            if (updates.monthlyFreeQuota !== undefined) {
+                if (typeof updates.monthlyFreeQuota !== 'number' || updates.monthlyFreeQuota < 0) {
+                    return errorResponse(res, 'Invalid monthlyFreeQuota value', 400);
+                }
+            }
+
+            // Validate inputMethods if provided
+            if (updates.inputMethods !== undefined) {
+                if (typeof updates.inputMethods !== 'object') {
+                    return errorResponse(res, 'Invalid inputMethods value', 400);
+                }
+            }
+
+            // Validate vipConfig if provided
+            if (updates.vipConfig !== undefined) {
+                if (typeof updates.vipConfig !== 'object') {
+                    return errorResponse(res, 'Invalid vipConfig value', 400);
+                }
+                if (updates.vipConfig.processingMultiplier !== undefined) {
+                    if (typeof updates.vipConfig.processingMultiplier !== 'number' || 
+                        updates.vipConfig.processingMultiplier < 1 || 
+                        updates.vipConfig.processingMultiplier > 5) {
+                        return errorResponse(res, 'processingMultiplier must be between 1 and 5', 400);
+                    }
+                }
+            }
+
+            const settings = await adminSettingsService.updateSettings(updates);
+            return successResponse(res, settings, 'Settings updated successfully');
+        } catch (error: any) {
+            return errorResponse(res, error.message || 'Failed to update settings', 500);
         }
     }
 }

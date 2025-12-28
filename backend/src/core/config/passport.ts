@@ -2,6 +2,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy, Profile, VerifyCallback } from 'passport-google-oauth20';
 import { userRepository } from '../repositories';
 import { UserRole, QUOTA } from '../../shared/constants';
+import adminSettingsService from '../../modules/admin/admin-settings.service';
 
 // Cấu hình Google OAuth
 export const configureGoogleAuth = () => {
@@ -52,7 +53,7 @@ export const configureGoogleAuth = () => {
               passwordHash: '', 
               googleId: profile.id,
               role: UserRole.FREE,
-              maxSlidesPerMonth: QUOTA.FREE_USER_MAX_SLIDES,
+              maxSlidesPerMonth: await adminSettingsService.getMonthlyFreeQuota(),
             });
           }
 

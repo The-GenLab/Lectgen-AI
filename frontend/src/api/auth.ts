@@ -1,5 +1,9 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+// Log API URL on module load for debugging
+console.log('[Auth API] API_URL:', API_URL);
+console.log('[Auth API] VITE_API_URL env:', import.meta.env.VITE_API_URL);
+
 export interface RegisterRequest {
   email: string;
   password: string;
@@ -81,23 +85,53 @@ export const authApi = {
   },
 
   // Login user
-  async login(data: RegisterRequest): Promise<AuthResponse> {
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-      credentials: 'include', // Include cookies
-    });
+  async login(data: RegisterRequest): Promise<AuthResponse & { maintenance?: boolean }> {
+    console.log('Login attempt - API_URL:', API_URL);
+    console.log('Login data:', { email: data.email, password: '***' });
+    
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+        credentials: 'include', // Include cookies
+      });
 
-    const result = await response.json();
+      console.log('Login response status:', response.status, response.statusText);
 
-    if (!response.ok) {
-      throw new Error(result.message || 'Login failed');
+      let result;
+      try {
+        result = await response.json();
+        console.log('Login response data:', result);
+      } catch (parseError) {
+        // If response is not JSON, it might be an HTML error page
+        const text = await response.text();
+        console.error('Failed to parse JSON response:', text);
+        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      }
+
+      if (!response.ok) {
+        // If maintenance mode (503), include maintenance flag in error message
+        if (response.status === 503 && result.maintenance) {
+          const error = new Error(result.message || 'System is under maintenance');
+          (error as any).maintenance = true;
+          throw error;
+        }
+        throw new Error(result.message || 'Login failed');
+      }
+
+      return result;
+    } catch (error: any) {
+      console.error('Login error:', error);
+      // Re-throw with more context if it's a network error
+      const errorMessage = error?.message || String(error) || 'Unknown error';
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('Network request failed') || errorMessage.includes('Load failed')) {
+        throw new Error(`Cannot connect to server at ${API_URL}. Please check: 1) Backend is running, 2) CORS is configured correctly, 3) Network/firewall allows the connection.`);
+      }
+      throw error;
     }
-
-    return result;
   },
 
   // Get current user info (protected route)

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { isAuthenticated, verifyAuth, getCurrentUser } from '../utils/auth';
+import { getMaintenanceMode } from '../api/settings';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,9 +11,29 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
   const [isVerifying, setIsVerifying] = useState(true);
   const [isValid, setIsValid] = useState(false);
+  const [isMaintenance, setIsMaintenance] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Check maintenance mode first (except for admin routes)
+      if (!requireAdmin) {
+        try {
+          const maintenanceMode = await getMaintenanceMode();
+          if (maintenanceMode) {
+            const user = getCurrentUser();
+            // If user is not ADMIN, show maintenance page
+            if (!user || user.role?.toUpperCase() !== 'ADMIN') {
+              setIsMaintenance(true);
+              setIsVerifying(false);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Failed to check maintenance mode:', error);
+          // Continue with auth check on error
+        }
+      }
+
       // Quick check first
       if (!isAuthenticated()) {
         setIsValid(false);
@@ -70,6 +91,11 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
         `}</style>
       </div>
     );
+  }
+
+  // Show maintenance page if in maintenance mode
+  if (isMaintenance) {
+    return <Navigate to="/maintenance" replace />;
   }
 
   // Redirect if not authenticated

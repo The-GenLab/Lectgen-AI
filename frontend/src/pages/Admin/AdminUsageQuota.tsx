@@ -446,7 +446,7 @@ const AdminUsageQuota = () => {
                             </div>
                             <div className="mt-6 pt-6 border-t border-white/20 flex justify-between items-center relative z-10">
                                 <span className="text-sm font-medium text-blue-100">{stats?.vipMetrics?.activeVipUsers ?? 0} Active VIPs</span>
-                                <button className="px-4 py-2 bg-white text-primary text-sm font-bold rounded-lg shadow hover:bg-blue-50 transition-colors">Manage Tiers</button>
+                                <button  onClick={() => navigate('/admin/settings')} className="px-4 py-2 bg-white text-primary text-sm font-bold rounded-lg shadow hover:bg-blue-50 transition-colors">Manage Tiers</button>
                             </div>
                         </div>
                     </div>

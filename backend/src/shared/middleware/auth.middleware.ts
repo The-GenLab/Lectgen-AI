@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import authService from '../../modules/auth/auth.service';
+import adminSettingsService from '../../modules/admin/admin-settings.service';
 import User from '../../core/models/User';
-import { UserRole } from '../constants';
+import { UserRole, isAdmin } from '../constants';
 
 // Authenticate middleware
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
@@ -25,6 +26,16 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 
     const user = await authService.getUserFromToken(token);
     req.user = user;
+
+    // Check maintenance mode - ADMIN can always access
+    const settings = await adminSettingsService.getSettings();
+    if (settings.maintenanceMode && !isAdmin(user.role)) {
+      return res.status(503).json({
+        success: false,
+        message: 'System is under maintenance. Please try again later.',
+        maintenance: true,
+      });
+    }
 
     next();
   } catch (error: any) {

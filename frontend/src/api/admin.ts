@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Configure axios to send cookies
 axios.defaults.withCredentials = true;
@@ -172,5 +172,53 @@ export const uploadUserAvatar = async (userId: string, file: File): Promise<{ av
         },
     });
 
+    return response.data.data;
+};
+
+/**
+ * System Settings API
+ */
+export interface SystemConfig {
+    monthlyFreeQuota: number;
+    inputMethods: {
+        text: boolean;
+        audio: boolean;
+        image: boolean;
+    };
+    vipConfig: {
+        priorityQueue: boolean;
+        processingMultiplier: number;
+    };
+    maintenanceMode: boolean;
+}
+
+/**
+ * Get system settings
+ */
+export const getSystemSettings = async (): Promise<SystemConfig> => {
+    const response = await axios.get(`${API_BASE_URL}/admin/settings`);
+    return response.data.data;
+};
+
+/**
+ * Update system settings
+ */
+export const updateSystemSettings = async (updates: Partial<SystemConfig>): Promise<SystemConfig> => {
+    const response = await axios.patch(`${API_BASE_URL}/admin/settings`, updates);
+    return response.data.data;
+};
+
+/**
+ * Create new user (Admin only)
+ */
+export interface CreateUserRequest {
+    name: string;
+    email: string;
+    password: string;
+    role: 'FREE' | 'VIP' | 'ADMIN';
+}
+
+export const createUser = async (data: CreateUserRequest): Promise<UserWithStats> => {
+    const response = await axios.post(`${API_BASE_URL}/admin/users`, data);
     return response.data.data;
 };

@@ -17,6 +17,9 @@ import AdminSystemLogs from './pages/Admin/AdminSystemLogs';
 import AdminUsers from './pages/Admin/AdminUsers';
 import AdminUserDetail from './pages/Admin/AdminUserDetail';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminSettings from './pages/Admin/AdminSettings';
+import AdminAddUser from './pages/Admin/AdminAddUser';
+import Maintenance from './pages/Maintenance/Maintenance';
 
 function App() {
   return (
@@ -39,6 +42,9 @@ function App() {
         <Route path="/admin/users/:id" element={<ProtectedRoute requireAdmin> <AdminUserDetail /> </ProtectedRoute>} />
         <Route path="/admin/usage" element={<ProtectedRoute requireAdmin> <AdminUsageQuota /> </ProtectedRoute>} />
         <Route path="/admin/logs" element={<ProtectedRoute requireAdmin> <AdminSystemLogs /> </ProtectedRoute>} />
+        <Route path="/admin/settings" element={<ProtectedRoute requireAdmin> <AdminSettings /> </ProtectedRoute>} />
+        <Route path="/admin/users/add" element={<ProtectedRoute requireAdmin> <AdminAddUser /> </ProtectedRoute>} />
+        <Route path="/maintenance" element={<Maintenance />} />
       </Routes>
     </BrowserRouter>
   );

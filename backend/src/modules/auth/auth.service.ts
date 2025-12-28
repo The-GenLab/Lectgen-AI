@@ -5,6 +5,7 @@ import { userRepository, sessionRepository } from '../../core/repositories';
 import User from '../../core/models/User';
 import { RegisterData, LoginData, TokenPayload, UserRole, JWT, QUOTA } from '../../shared/constants';
 import { sendResetPasswordEmail } from '../../core/config/email';
+import adminSettingsService from '../admin/admin-settings.service';
 
 class AuthService {
   // Cấu hình JWT
@@ -71,13 +72,16 @@ class AuthService {
       throw new Error('Password must be at least 8 characters');
     }
 
+    // Get monthly free quota from settings
+    const monthlyFreeQuota = await adminSettingsService.getMonthlyFreeQuota();
+    
     const user = await userRepository.create({
       email,
       name: email.split('@')[0],
       avatarUrl: null,
       passwordHash: await this.hashPassword(password),
       role: UserRole.FREE,
-      maxSlidesPerMonth: QUOTA.FREE_USER_MAX_SLIDES,
+      maxSlidesPerMonth: monthlyFreeQuota,
     });
 
     const accessToken = this.generateAccessToken({
@@ -238,6 +242,7 @@ class AuthService {
     let isNewUser = false;
 
     if (!user) {
+      const monthlyFreeQuota = await adminSettingsService.getMonthlyFreeQuota();
       user = await userRepository.create({
         email: googleUser.email,
         name: googleUser.name,
@@ -245,7 +250,7 @@ class AuthService {
         passwordHash: '',
         googleId: googleUser.googleId,
         role: UserRole.FREE,
-        maxSlidesPerMonth: QUOTA.FREE_USER_MAX_SLIDES,
+        maxSlidesPerMonth: monthlyFreeQuota,
       });
       isNewUser = true;
     } else if (!user.googleId) {

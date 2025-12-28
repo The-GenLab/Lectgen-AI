@@ -5,6 +5,8 @@ import { MessageRole, MessageType } from '../../shared/constants';
 import aiService from '../ai/ai.service';
 import conversationService from '../conversation/conversation.service';
 import { storageService } from '../storage';
+import queueService from '../../shared/services/queue.service';
+import adminSettingsService from '../admin/admin-settings.service';
 
 interface SendMessageParams {
   userId: string;
@@ -98,9 +100,39 @@ class ChatService {
 
     console.log('[ChatService] Generated prompt for AI:', prompt.substring(0, 200));
 
-    // 4. Generate LaTeX from AI
+    // Get user to check role
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // 4. Generate LaTeX from AI (with priority queue if enabled)
     console.log('[ChatService] Generating LaTeX for prompt:', prompt.substring(0, 100));
-    const latexData = await aiService.generateLatexContent(prompt);
+    
+    // Get VIP config
+    const settings = await adminSettingsService.getSettings();
+    const { priorityQueue, processingMultiplier } = settings.vipConfig;
+
+    let latexData;
+    
+    // If priority queue is enabled, use queue service
+    if (priorityQueue) {
+      console.log(`[ChatService] Using priority queue (multiplier: ${processingMultiplier})`);
+      latexData = await queueService.enqueue({
+        userId,
+        userRole: user.role,
+        execute: () => aiService.generateLatexContent(prompt),
+      });
+    } else {
+      // If priority queue is disabled, process immediately
+      latexData = await aiService.generateLatexContent(prompt);
+    }
+
+    // Apply processing multiplier for VIP users (affects retry/timeout logic)
+    // The multiplier mainly affects queue priority (calculated in queue service)
+    if ((user.role === 'VIP' || user.role === 'ADMIN') && processingMultiplier > 1) {
+      console.log(`[ChatService] VIP user processing with multiplier: ${processingMultiplier}x`);
+    }
 
     // 5. Upload LaTeX file to MinIO and save both code + URL
     const latexFileName = `${conversation.id}-${Date.now()}.tex`;

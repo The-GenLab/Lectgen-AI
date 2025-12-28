@@ -22,7 +22,6 @@ import {
   EditOutlined,
   SendOutlined,
   RobotOutlined,
-  UserOutlined,
   ThunderboltOutlined,
   AudioOutlined,
   PictureOutlined,
@@ -41,6 +40,7 @@ import {
   type Message as ChatMessage,
   type Conversation 
 } from '../../api/chat';
+import { getInputMethods, type InputMethods } from '../../api/settings';
 import { message as antdMessage } from 'antd';
 import styles from './Dashboard.module.css';
 
@@ -58,6 +58,7 @@ export default function Dashboard() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+  const [inputMethods, setInputMethods] = useState<InputMethods>({ text: true, audio: true, image: true });
 
   // Group conversations by date
   const groupConversationsByDate = () => {
@@ -131,9 +132,20 @@ export default function Dashboard() {
         setIsLoadingConversations(false);
       }
     };
+
+    const loadInputMethods = async () => {
+      try {
+        const methods = await getInputMethods();
+        setInputMethods(methods);
+      } catch (error) {
+        console.error('Failed to load input methods:', error);
+        // Use defaults on error
+      }
+    };
     
     loadUserData();
     loadConversations();
+    loadInputMethods();
   }, []);
 
   // Get user display name
@@ -147,11 +159,26 @@ export default function Dashboard() {
   // Get user initials for avatar fallback
   const getUserInitials = () => {
     const displayName = getUserDisplayName();
-    const words = displayName.split(' ').filter(w => w.length > 0);
+    const words = displayName.split(' ').filter((w: string) => w.length > 0);
     if (words.length >= 2) {
       return (words[0][0] + words[words.length - 1][0]).toUpperCase();
     }
     return displayName.substring(0, 2).toUpperCase();
+  };
+
+  // Check if user is VIP or ADMIN (they can use all input methods)
+  const isVipOrAdmin = () => {
+    if (!currentUser) return false;
+    const role = currentUser.role?.toUpperCase();
+    return role === 'VIP' || role === 'ADMIN';
+  };
+
+  // Get enabled input methods (VIP/ADMIN always have all enabled)
+  const getEnabledInputMethods = (): InputMethods => {
+    if (isVipOrAdmin()) {
+      return { text: true, audio: true, image: true };
+    }
+    return inputMethods;
   };
 
   // Get role display text
@@ -773,12 +800,13 @@ export default function Dashboard() {
 
           {/* Input Area */}
           <div className={styles.inputArea}>
-            <Tabs
-              activeKey={activeTab}
-              onChange={setActiveTab}
-              centered
-              items={[
-                {
+            {(() => {
+              const enabledMethods = getEnabledInputMethods();
+              const tabItems = [];
+
+              // Text tab
+              if (enabledMethods.text) {
+                tabItems.push({
                   key: 'text',
                   label: (
                     <span>
@@ -829,8 +857,12 @@ export default function Dashboard() {
                       </Text>
                     </>
                   ),
-                },
-                {
+                });
+              }
+
+              // Audio tab
+              if (enabledMethods.audio) {
+                tabItems.push({
                   key: 'audio',
                   label: (
                     <span>
@@ -838,8 +870,12 @@ export default function Dashboard() {
                     </span>
                   ),
                   children: <AudioRecorder onTranscriptReady={handleTranscriptReady} />,
-                },
-                {
+                });
+              }
+
+              // Image tab
+              if (enabledMethods.image) {
+                tabItems.push({
                   key: 'image',
                   label: (
                     <span>
@@ -847,9 +883,24 @@ export default function Dashboard() {
                     </span>
                   ),
                   children: <TemplateAnalyzer onConfirm={handleImageUploadConfirm} />,
-                },
-              ]}
-            />
+                });
+              }
+
+              // If current activeTab is disabled, switch to first available tab
+              const enabledTabKeys = tabItems.map(item => item.key);
+              const effectiveActiveTab = enabledTabKeys.includes(activeTab) 
+                ? activeTab 
+                : (enabledTabKeys[0] || 'text');
+
+              return (
+                <Tabs
+                  activeKey={effectiveActiveTab}
+                  onChange={setActiveTab}
+                  centered
+                  items={tabItems}
+                />
+              );
+            })()}
           </div>
         </Content>
       </Layout>
