@@ -4,9 +4,9 @@ import passport from '../../core/config/passport';
 
 // Cookie options cho access token
 const ACCESS_TOKEN_COOKIE_OPTIONS = {
-  httpOnly: true, // Prevents JavaScript access (XSS protection)
-  secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-  sameSite: 'lax' as const, // CSRF protection
+  httpOnly: true, // 
+  secure: process.env.NODE_ENV === 'production', 
+  sameSite: 'lax' as const, 
   maxAge: 15 * 60 * 1000, // 15 minutes
   path: '/',
 };
@@ -16,15 +16,13 @@ const REFRESH_TOKEN_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  maxAge: 7 * 24 * 60 * 60 * 1000, 
   path: '/',
 };
 
 class AuthController {
-  /**
-   * Kiểm tra email đã tồn tại trong hệ thống hay chưa
-   * POST /api/auth/check-email
-   */
+
+  // Kiểm tra email đã tồn tại
   async checkEmail(req: Request, res: Response) {
     try {
       const { email } = req.body;
@@ -50,14 +48,7 @@ class AuthController {
     }
   }
 
-  /**
-   * Đăng ký tài khoản mới
-   * POST /api/auth/register
-   * Body: { email, password }
-   * - Password tối thiểu 8 ký tự
-   * - Tự động đăng nhập sau khi đăng ký
-   * - Trả về access token và refresh token trong cookie
-   */
+  //dang ky tai khoan
   async register(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
@@ -100,13 +91,7 @@ class AuthController {
     }
   }
 
-  /**
-   * Đăng nhập
-   * POST /api/auth/login
-   * Body: { email, password }
-   * - Xác thực email + password
-   * - Trả về access token và refresh token trong cookie
-   */
+  //dang nhap
   async login(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
@@ -148,12 +133,7 @@ class AuthController {
       });
     }
   }
-
-  /**
-   * Lấy thông tin user hiện tại (protected route)
-   * GET /api/auth/me
-   * Requires: JWT token trong cookie hoặc Authorization header
-   */
+  //lay thong tin nguoi dung dang nhap
   async me(req: Request, res: Response) {
     try {
       if (!req.user) {
@@ -187,12 +167,7 @@ class AuthController {
     }
   }
 
-  /**
-   * Refresh access token
-   * POST /api/auth/refresh-token
-   * - Sử dụng refresh token trong cookie để tạo access token mới
-   * - Cả access token và refresh token đều được làm mới
-   */
+  //lam moi token
   async refreshToken(req: Request, res: Response) {
     try {
       const oldRefreshToken = req.cookies?.refreshToken;
@@ -222,12 +197,7 @@ class AuthController {
     }
   }
 
-  /**
-   * Đăng xuất
-   * POST /api/auth/logout
-   * - Xóa refresh token khỏi database
-   * - Xóa cookies
-   */
+  //dang xuat
   async logout(req: Request, res: Response) {
     try {
       const refreshToken = req.cookies?.refreshToken;
@@ -263,11 +233,7 @@ class AuthController {
     }
   }
 
-  /**
-   * Đăng xuất tất cả thiết bị
-   * POST /api/auth/logout-all
-   * Requires: JWT token (authenticated user)
-   */
+  //dang xuat tat ca thiet bi
   async logoutAll(req: Request, res: Response) {
     try {
       if (!req.user) {
@@ -306,13 +272,7 @@ class AuthController {
     }
   }
 
-  /**
-   * Quên mật khẩu - Gửi email reset password
-   * POST /api/auth/forgot-password
-   * Body: { email }
-   * - Tạo reset token (10 phút)
-   * - Gửi email với link reset password
-   */
+  //quen mat khau
   async forgotPassword(req: Request, res: Response) {
     try {
       const { email } = req.body;
@@ -338,14 +298,7 @@ class AuthController {
       });
     }
   }
-
-  /**
-   * Reset password với token
-   * POST /api/auth/reset-password
-   * Body: { token, newPassword }
-   * - Token từ URL query được gửi qua email
-   * - Password tối thiểu 8 ký tự
-   */
+  //dat lai mat khau
   async resetPassword(req: Request, res: Response) {
     try {
       const { token, newPassword } = req.body;
@@ -377,12 +330,40 @@ class AuthController {
       });
     }
   }
+//check token dat lai mat khau
+  async validateResetToken(req: Request, res: Response) {
+    try {
+      const { token } = req.body;
 
-  /**
-   * Google OAuth - Khởi tạo authentication
-   * GET /api/auth/google
-   * - Redirect user đến Google consent screen
-   */
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: 'Token is required',
+        });
+      }
+
+      const isValid = await authService.validateResetToken(token);
+
+      if (!isValid) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid or expired reset token',
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Token is valid',
+      });
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Token validation failed',
+      });
+    }
+  }
+
+  //khoi dong google oauth
   async googleAuth(req: Request, res: Response) {
     // Passport sẽ xử lý redirect đến Google
     passport.authenticate('google', {
@@ -390,22 +371,14 @@ class AuthController {
     })(req, res);
   }
 
-  /**
-   * Google OAuth Callback
-   * GET /api/auth/google/callback
-   * - Google redirect về đây sau khi user authorize
-   * - Tạo hoặc update user
-   * - Tạo tokens và redirect về frontend
-   */
+  //xu ly callback google oauth
   async googleCallback(req: Request, res: Response) {
-    passport.authenticate('google', { session: false }, async (err, user) => {
+    passport.authenticate('google', { session: false }, async (err: any, user: any) => {
       try {
         if (err || !user) {
-          const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+          const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
           return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
         }
-
-        // Xử lý Google OAuth (tạo user hoặc login)
         const result = await authService.handleGoogleAuth({
           googleId: user.googleId,
           email: user.email,
@@ -417,12 +390,12 @@ class AuthController {
         res.cookie('accessToken', result.accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
         res.cookie('refreshToken', result.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
 
-        // Redirect về frontend
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-        return res.redirect(`${frontendUrl}/dashboard`);
+        // Redirect về trang login-success để frontend fetch user data
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        return res.redirect(`${frontendUrl}/login-success`);
       } catch (error: any) {
         console.error('Google OAuth callback error:', error);
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         return res.redirect(`${frontendUrl}/login?error=auth_failed`);
       }
     })(req, res);

@@ -7,112 +7,85 @@ import { RegisterData, LoginData, TokenPayload, UserRole, JWT, QUOTA } from '../
 import { sendResetPasswordEmail } from '../../core/config/email';
 
 class AuthService {
-  // Secret key dùng để ký và verify JWT 
+  // Cấu hình JWT
   private readonly JWT_SECRET: string = process.env.JWT_SECRET || JWT.DEFAULT_SECRET;
-
-  // Thời gian hết hạn của access token
   private readonly ACCESS_TOKEN_EXPIRES_IN: string = process.env.ACCESS_TOKEN_EXPIRES_IN || '15m';
-
-  // Thời gian hết hạn của refresh token
   private readonly REFRESH_TOKEN_EXPIRES_IN: string = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
-
-  // Số vòng salt dùng cho bcrypt khi hash password
   private readonly SALT_ROUNDS = JWT.SALT_ROUNDS;
 
-  /**
-   * Tạo Access Token JWT sau khi người dùng đăng nhập / đăng ký thành công
-   * Payload chỉ chứa các thông tin cần thiết để định danh và phân quyền
-   */
+  // Tạo access token
   generateAccessToken(payload: TokenPayload): string {
     return jwt.sign(payload, this.JWT_SECRET, {
       expiresIn: this.ACCESS_TOKEN_EXPIRES_IN,
     } as any);
   }
 
-  /**
-   * Tạo Refresh Token - chuỗi ngẫu nhiên lưu trong database
-   */
+  // Tạo refresh token ngẫu nhiên
   generateRefreshToken(): string {
     return crypto.randomBytes(64).toString('hex');
   }
 
-  /**
-   * Tính thời gian hết hạn của refresh token (7 ngày)
-   */
+  // Tính thời gian hết hạn refresh token
   getRefreshTokenExpiryDate(): Date {
     const expiryDate = new Date();
-    // Parse refresh token expiry (e.g., "7d" -> 7 days)
     const days = parseInt(this.REFRESH_TOKEN_EXPIRES_IN.replace('d', ''));
     expiryDate.setDate(expiryDate.getDate() + days);
     return expiryDate;
   }
 
-  //Xác thực JWT token gửi từ client
- 
+  // Xác thực access token
   verifyToken(token: string): TokenPayload {
     try {
       return jwt.verify(token, this.JWT_SECRET) as TokenPayload;
-    } catch (error) {
+    } catch {
       throw new Error('Invalid or expired token');
     }
   }
 
-  //Hash mật khẩu người dùng trước khi lưu vào database
+  // Hash mật khẩu
   async hashPassword(password: string): Promise<string> {
-    return await bcrypt.hash(password, this.SALT_ROUNDS);
+    return bcrypt.hash(password, this.SALT_ROUNDS);
   }
 
-  
-  // So sánh mật khẩu người dùng nhập vào với password đã hash trong database
+  // So sánh mật khẩu
   async comparePassword(password: string, hashedPassword: string): Promise<boolean> {
-    return await bcrypt.compare(password, hashedPassword);
+    return bcrypt.compare(password, hashedPassword);
   }
 
-  //Kiểm tra email đã tồn tại trong hệ thống hay chưa
+  // Kiểm tra email đã tồn tại chưa
   async checkEmailExists(email: string): Promise<boolean> {
-    const user = await userRepository.findByEmail(email);
-    return !!user;
+    return !!(await userRepository.findByEmail(email));
   }
 
-  //Đăng ký tài khoản mới
-  async register(data: RegisterData): Promise<{ user: User; accessToken: string; refreshToken: string }> {
+  // Đăng ký tài khoản
+  async register(
+    data: RegisterData
+  ): Promise<{ user: User; accessToken: string; refreshToken: string }> {
     const { email, password } = data;
 
-    // Kiểm tra email đã được đăng ký hay chưa
-    const existingUser = await userRepository.findByEmail(email);
-    if (existingUser) {
+    if (await userRepository.findByEmail(email)) {
       throw new Error('Email already registered');
     }
 
-    // Validate độ dài mật khẩu (tối thiểu 8 ký tự theo yêu cầu)
     if (password.length < 8) {
       throw new Error('Password must be at least 8 characters');
     }
 
-    // Hash mật khẩu trước khi lưu DB
-    const passwordHash = await this.hashPassword(password);
-
-    // Tự động lấy name từ email (phần trước dấu @)
-    const name = email.split('@')[0];
-
-    // Tạo user mới với role và quota mặc định
     const user = await userRepository.create({
       email,
-      name,
+      name: email.split('@')[0],
       avatarUrl: null,
-      passwordHash,
+      passwordHash: await this.hashPassword(password),
       role: UserRole.FREE,
       maxSlidesPerMonth: QUOTA.FREE_USER_MAX_SLIDES,
     });
 
-    // Tạo access token
     const accessToken = this.generateAccessToken({
       userId: user.id,
       email: user.email,
       role: user.role,
     });
 
-    // Tạo refresh token và lưu vào database
     const refreshToken = this.generateRefreshToken();
     await sessionRepository.create({
       userId: user.id,
@@ -123,35 +96,28 @@ class AuthService {
     return { user, accessToken, refreshToken };
   }
 
-  // Đăng nhập người dùng
-  async login(data: LoginData): Promise<{ user: User; accessToken: string; refreshToken: string }> {
+  // Đăng nhập
+  async login(
+    data: LoginData
+  ): Promise<{ user: User; accessToken: string; refreshToken: string }> {
     const { email, password } = data;
-
-    // Tìm user theo email
+    if(password.length === 0){
+      throw new Error('Password cannot be empty');
+    }
     const user = await userRepository.findByEmail(email);
-    if (!user) {
+    if (!user || !user.passwordHash) {
+      throw new Error('Invalid email or password');
+    }
+    if (!(await this.comparePassword(password, user.passwordHash))) {
       throw new Error('Invalid email or password');
     }
 
-    // Kiểm tra nếu user đăng nhập bằng Google (không có password)
-    if (!user.passwordHash) {
-      throw new Error('This account uses Google login. Please login with Google.');
-    }
-
-    // Kiểm tra mật khẩu
-    const isPasswordValid = await this.comparePassword(password, user.passwordHash);
-    if (!isPasswordValid) {
-      throw new Error('Invalid email or password');
-    }
-
-    // Tạo access token
     const accessToken = this.generateAccessToken({
       userId: user.id,
       email: user.email,
       role: user.role,
     });
 
-    // Tạo refresh token và lưu vào database
     const refreshToken = this.generateRefreshToken();
     await sessionRepository.create({
       userId: user.id,
@@ -162,46 +128,34 @@ class AuthService {
     return { user, accessToken, refreshToken };
   }
 
-  //Lấy thông tin user từ JWT token
+  // Lấy thông tin user từ access token
   async getUserFromToken(token: string): Promise<User> {
     const payload = this.verifyToken(token);
     const user = await userRepository.findById(payload.userId);
-
-    if (!user) {
-      throw new Error('User not found');
-    }
-
+    if (!user) throw new Error('User not found');
     return user;
   }
 
-  //Làm mới JWT token (refresh token)
-  async refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
-    // Tìm session với refresh token
+  // Làm mới access token
+  async refreshAccessToken(
+    refreshToken: string
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const session = await sessionRepository.findByRefreshToken(refreshToken);
-    
-    if (!session) {
-      throw new Error('Invalid or expired refresh token');
-    }
+    if (!session) throw new Error('Invalid or expired refresh token');
 
-    // Kiểm tra user vẫn tồn tại trong hệ thống
     const user = await userRepository.findById(session.userId);
     if (!user) {
-      // Xóa session không hợp lệ
       await sessionRepository.delete(session.id);
       throw new Error('User not found');
     }
 
-    // Tạo access token mới
     const newAccessToken = this.generateAccessToken({
       userId: user.id,
       email: user.email,
       role: user.role,
     });
 
-    // Tạo refresh token mới và cập nhật session
     const newRefreshToken = this.generateRefreshToken();
-    
-    // Xóa session cũ và tạo session mới
     await sessionRepository.delete(session.id);
     await sessionRepository.create({
       userId: user.id,
@@ -212,7 +166,7 @@ class AuthService {
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
 
-  // Đăng xuất người dùng (xóa refresh token)
+  // Đăng xuất 1 thiết bị
   async logout(refreshToken: string): Promise<void> {
     await sessionRepository.deleteByRefreshToken(refreshToken);
   }
@@ -222,78 +176,58 @@ class AuthService {
     await sessionRepository.deleteAllByUserId(userId);
   }
 
-  // Forgot password - tạo reset token và gửi email
+  // Gửi email quên mật khẩu
   async forgotPassword(email: string): Promise<void> {
     const user = await userRepository.findByEmail(email);
-    
     if (!user) {
-      // Không tiết lộ email có tồn tại hay không (bảo mật)
-      // Nhưng vẫn throw error để client biết
-      throw new Error('If this email exists, a password reset link has been sent.');
+      throw new Error('If the email exists, a password reset link has been sent');
     }
 
-    // Tạo reset token (chuỗi ngẫu nhiên)
     const resetToken = crypto.randomBytes(32).toString('hex');
-    
-    // Hash reset token trước khi lưu vào database
-    const resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    
-    // Thời gian hết hạn: 10 phút
-    const resetPasswordExpires = new Date();
-    resetPasswordExpires.setMinutes(resetPasswordExpires.getMinutes() + 10);
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
-    // Lưu token đã hash và thời gian hết hạn vào database
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 10);
+
     await userRepository.update(user.id, {
-      resetPasswordToken,
-      resetPasswordExpires,
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: expires,
     });
 
-    // Tạo URL reset password (với token chưa hash)
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-    // Gửi email
-    const emailSent = await sendResetPasswordEmail(user.email, user.name, resetUrl);
-    
-    if (!emailSent) {
-      // Nếu gửi email thất bại, xóa token đã lưu
+    if (!(await sendResetPasswordEmail(user.email, user.name, resetUrl))) {
       await userRepository.update(user.id, {
         resetPasswordToken: null,
         resetPasswordExpires: null,
       });
-      throw new Error('Failed to send reset password email. Please try again later.');
+      throw new Error('Failed to send password reset email');
     }
   }
 
-  // Reset password với token
+  // Đặt lại mật khẩu
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    // Hash token từ URL để so sánh với token trong database
-    const resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await userRepository.findByResetToken(hashedToken);
 
-    // Tìm user với token và còn hạn
-    const user = await userRepository.findByResetToken(resetPasswordToken);
+    if (!user) throw new Error('Invalid or expired password reset token');
+    if (newPassword.length < 8) throw new Error('Password must be at least 8 characters');
 
-    if (!user) {
-      throw new Error('Invalid or expired reset token');
-    }
-
-    // Validate độ dài mật khẩu
-    if (newPassword.length < 8) {
-      throw new Error('Password must be at least 8 characters');
-    }
-
-    // Hash mật khẩu mới
-    const passwordHash = await this.hashPassword(newPassword);
-
-    // Cập nhật password và xóa reset token
     await userRepository.update(user.id, {
-      passwordHash,
+      passwordHash: await this.hashPassword(newPassword),
       resetPasswordToken: null,
       resetPasswordExpires: null,
     });
   }
 
-  // Xử lý Google OAuth login/register
+  // Kiểm tra reset token còn hợp lệ không
+  async validateResetToken(token: string): Promise<boolean> {
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    return !!(await userRepository.findByResetToken(hashedToken));
+  }
+
+  // Xử lý đăng nhập / đăng ký bằng Google
   async handleGoogleAuth(googleUser: {
     googleId: string;
     email: string;
@@ -303,35 +237,29 @@ class AuthService {
     let user = await userRepository.findByEmail(googleUser.email);
     let isNewUser = false;
 
-    if (user) {
-      // User đã tồn tại, cập nhật googleId nếu chưa có
-      if (!user.googleId) {
-        user = await userRepository.update(user.id, {
-          googleId: googleUser.googleId,
-        }) as User;
-      }
-    } else {
-      // Tạo user mới
+    if (!user) {
       user = await userRepository.create({
         email: googleUser.email,
         name: googleUser.name,
         avatarUrl: googleUser.avatarUrl,
-        passwordHash: '', // Google OAuth user không cần password
+        passwordHash: '',
         googleId: googleUser.googleId,
         role: UserRole.FREE,
         maxSlidesPerMonth: QUOTA.FREE_USER_MAX_SLIDES,
       });
       isNewUser = true;
+    } else if (!user.googleId) {
+      user = (await userRepository.update(user.id, {
+        googleId: googleUser.googleId,
+      })) as User;
     }
 
-    // Tạo access token
     const accessToken = this.generateAccessToken({
       userId: user.id,
       email: user.email,
       role: user.role,
     });
 
-    // Tạo refresh token
     const refreshToken = this.generateRefreshToken();
     await sessionRepository.create({
       userId: user.id,

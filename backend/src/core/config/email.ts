@@ -4,10 +4,10 @@ import nodemailer from 'nodemailer';
 export const emailConfig = {
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
+  secure: process.env.EMAIL_SECURE === 'true', 
   auth: {
-    user: process.env.EMAIL_USER, // Gmail address
-    pass: process.env.EMAIL_PASSWORD, // App password (not regular password)
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD, 
   },
 };
 
@@ -18,10 +18,10 @@ export const transporter = nodemailer.createTransport(emailConfig);
 export const verifyEmailConfig = async (): Promise<boolean> => {
   try {
     await transporter.verify();
-    console.log('✅ Email service is ready to send messages');
+    console.log('Email service is ready to send messages');
     return true;
   } catch (error) {
-    console.error('❌ Email service configuration error:', error);
+    console.error('Email service configuration error:', error);
     return false;
   }
 };
@@ -112,7 +112,7 @@ export const getResetPasswordEmailHtml = (resetUrl: string, userName: string): s
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">🎓 LectGen AI</div>
+            <div class="logo"LectGen</div>
         </div>
         
         <h2 class="title">Xin chào ${userName}!</h2>
@@ -149,7 +149,7 @@ export const getResetPasswordEmailHtml = (resetUrl: string, userName: string): s
   `;
 };
 
-// Template cho email chào mừng (optional)
+// Template cho email chào mừng 
 export const getWelcomeEmailHtml = (userName: string): string => {
   return `
 <!DOCTYPE html>
@@ -204,7 +204,6 @@ export const getWelcomeEmailHtml = (userName: string): string => {
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">🎉</div>
             <h2 class="title">Chào mừng ${userName} đến với LectGen AI!</h2>
         </div>
         
@@ -252,7 +251,7 @@ export const sendWelcomeEmail = async (
     await transporter.sendMail({
       from: EMAIL_FROM,
       to,
-      subject: 'Chào mừng đến với LectGen AI! 🎓',
+      subject: 'Chào mừng đến với LectGen AI!',
       html: getWelcomeEmailHtml(userName),
     });
     return true;

@@ -77,9 +77,13 @@ const Profile: React.FC = () => {
       const response = await userApi.updateProfile({ name: name.trim() });
       
       if (response.success) {
-        // Update localStorage
-        const updatedUser = { ...currentUser, name: name.trim(), avatarUrl: newAvatarUrl };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        // Update sessionStorage with basic user info only
+        const basicUserInfo = {
+          id: currentUser.id,
+          email: currentUser.email,
+          role: currentUser.role
+        };
+        sessionStorage.setItem('user', JSON.stringify(basicUserInfo));
         
         setSuccessMessage('Đã lưu thay đổi');
         

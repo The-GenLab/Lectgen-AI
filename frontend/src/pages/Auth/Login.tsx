@@ -39,10 +39,13 @@ export default function Login() {
     try {
       const result = await authApi.login({ email, password });
 
-      // Save user info to localStorage (token is stored in HTTP-only cookie)
-      localStorage.setItem('user', JSON.stringify(result.data.user));
+      const basicUserInfo = {
+        id: result.data.user.id,
+        email: result.data.user.email,
+        role: result.data.user.role,
+      };
+      sessionStorage.setItem('user', JSON.stringify(basicUserInfo));
 
-      // Redirect to success page (shows loading animation then redirects to dashboard)
       navigate('/login-success');
     } catch (err: unknown) {
       if (err instanceof Error) {

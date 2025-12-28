@@ -19,7 +19,13 @@ const ChangeAvatar: React.FC = () => {
         const response = await getProfile();
         if (response.success && response.data?.user) {
           setCurrentUser(response.data.user);
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+          // Update sessionStorage with basic user info only
+          const basicUserInfo = {
+            id: response.data.user.id,
+            email: response.data.user.email,
+            role: response.data.user.role
+          };
+          sessionStorage.setItem('user', JSON.stringify(basicUserInfo));
         } else {
           const user = getCurrentUser();
           setCurrentUser(user);
@@ -91,10 +97,14 @@ const ChangeAvatar: React.FC = () => {
     try {
       const response = await uploadAvatar(avatarFile);
       if (response.success) {
-        // Update local storage
-        const updatedUser = { ...currentUser, avatarUrl: response.data.avatarUrl };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        setCurrentUser(updatedUser);
+        // Update session storage with basic user info only
+        const basicUserInfo = {
+          id: currentUser.id,
+          email: currentUser.email,
+          role: currentUser.role
+        };
+        sessionStorage.setItem('user', JSON.stringify(basicUserInfo));
+        setCurrentUser({ ...currentUser, avatarUrl: response.data.avatarUrl });
 
         message.success('Avatar updated successfully!');
         

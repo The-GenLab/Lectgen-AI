@@ -52,8 +52,13 @@ export default function Register() {
 
       const result = await authApi.register({ email, password });
       
-      // Save user info to localStorage (token is stored in HTTP-only cookie)
-      localStorage.setItem('user', JSON.stringify(result.data.user));
+      // Save basic user info to sessionStorage (token is stored in HTTP-only cookie)
+      const basicUserInfo = {
+        id: result.data.user.id,
+        email: result.data.user.email,
+        role: result.data.user.role,
+      };
+      sessionStorage.setItem('user', JSON.stringify(basicUserInfo));
       
       // Redirect to success page
       navigate('/login-success');

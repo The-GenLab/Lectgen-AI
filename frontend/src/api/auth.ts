@@ -150,8 +150,8 @@ export const authApi = {
 
     const result = await response.json();
 
-    // Clear local storage
-    localStorage.removeItem('user');
+    // Clear session storage
+    sessionStorage.removeItem('user');
 
     if (!response.ok) {
       throw new Error(result.message || 'Logout failed');
@@ -170,9 +170,9 @@ export const authApi = {
     }
   },
 
-  // Helper: Get stored user from localStorage (for quick access without API call)
+  // Helper: Get stored user from sessionStorage (for quick access without API call)
   getStoredUser(): User | null {
-    const userStr = localStorage.getItem('user');
+    const userStr = sessionStorage.getItem('user');
     if (!userStr) return null;
     try {
       return JSON.parse(userStr);
@@ -196,6 +196,26 @@ export const authApi = {
 
     if (!response.ok) {
       throw new Error(result.message || 'Failed to send reset link');
+    }
+
+    return result;
+  },
+
+  // Validate reset password token
+  async validateResetToken(token: string): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`${API_URL}/auth/validate-reset-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
+      credentials: 'include',
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Token validation failed');
     }
 
     return result;

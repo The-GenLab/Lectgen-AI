@@ -13,9 +13,9 @@ export interface UserAttributes {
   slidesGenerated: number;
   maxSlidesPerMonth: number;
   subscriptionExpiresAt: Date | null;
-  googleId: string | null; // Thêm Google ID cho OAuth
-  resetPasswordToken: string | null; // Token để reset password (đã hash)
-  resetPasswordExpires: Date | null; // Thời gian hết hạn của reset token (10 phút)
+  googleId: string | null; 
+  resetPasswordToken: string | null; 
+  resetPasswordExpires: Date | null; 
   createdAt: Date;
   updatedAt: Date;
 }
@@ -95,7 +95,7 @@ User.init(
     passwordHash: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: '', // Cho phép Google OAuth users không có password
+      defaultValue: '', 
     },
     role: {
       type: DataTypes.ENUM(UserRole.FREE, UserRole.VIP, UserRole.ADMIN),

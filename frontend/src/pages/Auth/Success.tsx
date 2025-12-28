@@ -2,12 +2,36 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styles from './Success.module.css';
 import { AuthHeader, CheckIcon } from '../../components/auth';
+import { authApi } from '../../api/auth';
 
 export default function Success() {
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Fetch user data from backend after Google OAuth
+    const fetchUserData = async () => {
+      try {
+        const response = await authApi.me();
+        if (response.success && response.data?.user) {
+          // Save only basic user info to sessionStorage (auto-cleared on tab close)
+          const basicUserInfo = {
+            id: response.data.user.id,
+            email: response.data.user.email,
+            role: response.data.user.role,
+          };
+          sessionStorage.setItem('user', JSON.stringify(basicUserInfo));
+        }
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+        // If failed, redirect to login
+        navigate('/login');
+        return;
+      }
+    };
+
+    fetchUserData();
+
     // Simulate loading progress
     const interval = setInterval(() => {
       setProgress(prev => {
@@ -16,7 +40,7 @@ export default function Success() {
           // Redirect to dashboard after loading complete
           setTimeout(() => {
             // Check if user is admin and redirect accordingly
-            const userStr = localStorage.getItem('user');
+            const userStr = sessionStorage.getItem('user');
             if (userStr) {
               const user = JSON.parse(userStr);
               if (user.role === 'ADMIN') {

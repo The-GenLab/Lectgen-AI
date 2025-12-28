@@ -12,21 +12,30 @@ export const getAuthHeadersForUpload = (): HeadersInit => {
   return {};
 };
 
-// Check if user is authenticated (sync check using localStorage)
+// Check if user is authenticated (sync check using sessionStorage)
 export const isAuthenticated = (): boolean => {
-  // Quick check: if user data exists in localStorage, assume authenticated
+  // Quick check: if user data exists in sessionStorage, assume authenticated
   // The actual token is stored in HTTP-only cookie (not accessible via JS)
-  return !!localStorage.getItem('user');
+  return !!sessionStorage.getItem('user');
 };
 
 // Verify authentication with backend (async)
 export const verifyAuth = async (): Promise<boolean> => {
   try {
-    await authApi.me();
+    const response = await authApi.me();
+    // Save only basic user info to sessionStorage (auto-cleared on tab close)
+    if (response.success && response.data?.user) {
+      const basicUserInfo = {
+        id: response.data.user.id,
+        email: response.data.user.email,
+        role: response.data.user.role,
+      };
+      sessionStorage.setItem('user', JSON.stringify(basicUserInfo));
+    }
     return true;
   } catch {
-    // Clear local user data if token is invalid
-    localStorage.removeItem('user');
+    // Clear session storage if token is invalid
+    sessionStorage.removeItem('user');
     return false;
   }
 };
@@ -36,14 +45,14 @@ export const logout = async (): Promise<void> => {
   try {
     await authApi.logout();
   } catch {
-    // Clear local storage even if API call fails
-    localStorage.removeItem('user');
+    // Clear session storage even if API call fails
+    sessionStorage.removeItem('user');
   }
   window.location.href = '/login';
 };
 
-// Get user from localStorage
+// Get user from sessionStorage (only basic info)
 export const getCurrentUser = () => {
-  const userStr = localStorage.getItem('user');
+  const userStr = sessionStorage.getItem('user');
   return userStr ? JSON.parse(userStr) : null;
 };

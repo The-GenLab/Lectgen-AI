@@ -10,7 +10,7 @@ export const configureGoogleAuth = () => {
   const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback';
 
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-    console.warn('⚠️  Google OAuth credentials not configured. Google login will not be available.');
+    console.warn(' Google OAuth credentials not configured. Google login will not be available.');
     return;
   }
 
@@ -24,17 +24,17 @@ export const configureGoogleAuth = () => {
       },
       async (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => {
         try {
-          // Lấy email từ profile (email đầu tiên được verify)
+          
           const email = profile.emails?.[0]?.value;
           if (!email) {
             return done(new Error('No email found in Google profile'), undefined);
           }
 
-          // Kiểm tra xem user đã tồn tại chưa (bằng googleId hoặc email)
+          
           let user = await userRepository.findByEmail(email);
 
           if (user) {
-            // Nếu user đã tồn tại nhưng chưa có googleId, cập nhật googleId
+           
             if (!user.googleId) {
               user = await userRepository.update(user.id, {
                 googleId: profile.id,
@@ -49,7 +49,7 @@ export const configureGoogleAuth = () => {
               email,
               name,
               avatarUrl,
-              passwordHash: '', // Google OAuth user không cần password
+              passwordHash: '', 
               googleId: profile.id,
               role: UserRole.FREE,
               maxSlidesPerMonth: QUOTA.FREE_USER_MAX_SLIDES,
@@ -65,12 +65,12 @@ export const configureGoogleAuth = () => {
     )
   );
 
-  // Serialize user for session
+ 
   passport.serializeUser((user: any, done) => {
     done(null, user.id);
   });
 
-  // Deserialize user from session
+
   passport.deserializeUser(async (id: string, done: any) => {
     try {
       const user = await userRepository.findById(id);
@@ -80,7 +80,7 @@ export const configureGoogleAuth = () => {
     }
   });
 
-  console.log('✅ Google OAuth configured successfully');
+  console.log('Google OAuth configured successfully');
 };
 
 export default passport;

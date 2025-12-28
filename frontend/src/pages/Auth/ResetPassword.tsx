@@ -20,15 +20,43 @@ export default function ResetPassword() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [validatingToken, setValidatingToken] = useState(true);
+  const [tokenValid, setTokenValid] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  
+
   const token = searchParams.get('token');
 
+  // Validate token on mount
   useEffect(() => {
-    if (!token) {
-      setError('Invalid or missing reset token');
-    }
+    const validateToken = async () => {
+      if (!token) {
+        setError('Invalid or missing password reset link');
+        setTokenValid(false);
+        setValidatingToken(false);
+        return;
+      }
+
+      try {
+        setValidatingToken(true);
+        await authApi.validateResetToken(token);
+        setTokenValid(true);
+        setError('');
+      } catch (err) {
+        if (err instanceof Error) {
+          setError(err.message === 'Invalid or expired reset token'
+            ? 'The password reset link is no longer valid or has expired. Please request a new link.'
+            : err.message);
+        } else {
+          setError('The password reset link is no longer valid. Please request a new link.');
+        }
+        setTokenValid(false);
+      } finally {
+        setValidatingToken(false);
+      }
+    };
+
+    validateToken();
   }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,7 +118,50 @@ export default function ResetPassword() {
 
           {/* Form Card */}
           <div className={styles.formCard}>
-            {!success ? (
+            {validatingToken ? (
+              /* Loading State */
+              <div style={{
+                padding: '40px 20px',
+                textAlign: 'center',
+                color: '#6b7280',
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  border: '3px solid #e5e7eb',
+                  borderTopColor: '#3b82f6',
+                  borderRadius: '50%',
+                  margin: '0 auto 16px',
+                  animation: 'spin 1s linear infinite',
+                }}></div>
+                <p>Validating link...</p>
+              </div>
+            ) : !tokenValid ? (
+              /* Invalid Token Message */
+              <div>
+                <div style={{
+                  padding: '12px',
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '8px',
+                  color: '#991b1b',
+                  fontSize: '0.875rem',
+                  marginBottom: '16px',
+                }}>
+                  {error}
+                </div>
+                <div className={styles.actionButtons}>
+                  <Link className={styles.backToLogin} to="/forgot-password">
+                    <ArrowBackIcon />
+                    <span>Request new link</span>
+                  </Link>
+                  <Link className={styles.backToLogin} to="/login">
+                    <ArrowBackIcon />
+                    <span>Back to Login</span>
+                  </Link>
+                </div>
+              </div>
+            ) : !success ? (
               <form onSubmit={handleSubmit}>
                 {/* Error Message */}
                 {error && (
@@ -117,7 +188,7 @@ export default function ResetPassword() {
                       placeholder="Enter new password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      disabled={loading || !token}
+                      disabled={loading}
                       minLength={12}
                     />
                     <button
@@ -141,7 +212,7 @@ export default function ResetPassword() {
                       placeholder="Confirm new password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      disabled={loading || !token}
+                      disabled={loading}
                       minLength={12}
                     />
                     <button
@@ -157,9 +228,9 @@ export default function ResetPassword() {
 
                 {/* Action Buttons */}
                 <div className={styles.actionButtons} style={{ marginTop: '24px' }}>
-                  <SubmitButton 
-                    loading={loading} 
-                    disabled={!password || !confirmPassword || !token}
+                  <SubmitButton
+                    loading={loading}
+                    disabled={!password || !confirmPassword}
                     loadingText="Resetting..."
                   >
                     Reset Password

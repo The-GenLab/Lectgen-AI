@@ -98,16 +98,21 @@ export default function Dashboard() {
         const response = await getProfile();
         if (response.success && response.data?.user) {
           setCurrentUser(response.data.user);
-          // Update localStorage with full user data
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+          // Update sessionStorage with basic user info only
+          const basicUserInfo = {
+            id: response.data.user.id,
+            email: response.data.user.email,
+            role: response.data.user.role
+          };
+          sessionStorage.setItem('user', JSON.stringify(basicUserInfo));
         } else {
-          // Fallback to localStorage
+          // Fallback to sessionStorage
           const user = getCurrentUser();
           setCurrentUser(user);
         }
       } catch (error) {
         console.error('Failed to load user profile:', error);
-        // Fallback to localStorage
+        // Fallback to sessionStorage
         const user = getCurrentUser();
         setCurrentUser(user);
       }
