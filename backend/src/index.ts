@@ -2,8 +2,11 @@ import { configDotenv } from "dotenv";
 import express, { Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import passport from "passport";
 import { syncDatabase } from "./core/models";
 import { initializeBuckets } from "./core/config/minio";
+import { configureGoogleAuth } from "./core/config/passport";
+import { verifyEmailConfig } from "./core/config/email";
 import authRoutes from "./modules/auth/auth.routes";
 import conversationRoutes from "./modules/conversation/conversation.routes";
 import userRoutes from "./modules/user/user.routes";
@@ -33,6 +36,9 @@ app.use(
     credentials: true,
   }),
 );
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // Parse cookies
 app.use(cookieParser());
@@ -80,6 +86,12 @@ app.use(errorHandler);
 // Initialize database and start server
 const startServer = async () => {
   try {
+    // Configure Google OAuth
+    configureGoogleAuth();
+
+    // Verify email configuration (optional - sẽ không dừng server nếu fail)
+    await verifyEmailConfig();
+
     // Sync database
     await syncDatabase(false); // Set to true to drop all tables
 

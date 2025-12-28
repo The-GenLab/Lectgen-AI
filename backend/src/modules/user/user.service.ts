@@ -48,7 +48,7 @@ class UserService {
 
   // Get all users (admin only)
   async getAllUsers(limit: number = 50, offset: number = 0) {
-    return await userRepository.findAll(limit, offset);
+    return await userRepository.findAll({ limit, offset });
   }
 
   // Get users by role (admin only)

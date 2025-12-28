@@ -21,6 +21,12 @@ export default function Login() {
   const [showError, setShowError] = useState(false);
   const navigate = useNavigate();
 
+  const handleGoogleLogin = () => {
+    // Redirect to backend Google OAuth endpoint
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    window.location.href = `${API_URL}/auth/google`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -33,10 +39,13 @@ export default function Login() {
     try {
       const result = await authApi.login({ email, password });
 
-      // Save user info to localStorage (token is stored in HTTP-only cookie)
-      localStorage.setItem('user', JSON.stringify(result.data.user));
+      const basicUserInfo = {
+        id: result.data.user.id,
+        email: result.data.user.email,
+        role: result.data.user.role,
+      };
+      sessionStorage.setItem('user', JSON.stringify(basicUserInfo));
 
-      // Redirect to success page (shows loading animation then redirects to dashboard)
       navigate('/login-success');
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -121,7 +130,7 @@ export default function Login() {
             <Divider text="Or continue with" />
 
             {/* Social Login */}
-            <SocialButtons variant="login" disabled={loading} />
+            <SocialButtons variant="login" disabled={loading} onGoogleClick={handleGoogleLogin} />
           </form>
 
           {/* Card Footer */}

@@ -61,14 +61,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const location = useLocation();
 
     const handleLogout = () => {
-        localStorage.clear();
+        sessionStorage.clear();
         document.cookie.split(";").forEach(c => {
             document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
         });
         navigate('/login');
     };
 
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
 
     return (
         <div className={styles.container}>

@@ -23,12 +23,18 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const handleGoogleSignup = () => {
+    // Redirect to backend Google OAuth endpoint
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    window.location.href = `${API_URL}/auth/google`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) return;
-    if (password.length < 12) {
-      setError('Password must be at least 12 characters');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
     
@@ -46,8 +52,13 @@ export default function Register() {
 
       const result = await authApi.register({ email, password });
       
-      // Save user info to localStorage (token is stored in HTTP-only cookie)
-      localStorage.setItem('user', JSON.stringify(result.data.user));
+      // Save basic user info to sessionStorage (token is stored in HTTP-only cookie)
+      const basicUserInfo = {
+        id: result.data.user.id,
+        email: result.data.user.email,
+        role: result.data.user.role,
+      };
+      sessionStorage.setItem('user', JSON.stringify(basicUserInfo));
       
       // Redirect to success page
       navigate('/login-success');
@@ -134,7 +145,7 @@ export default function Register() {
           </div>
 
           {/* Social Auth */}
-          <SocialButtons variant="register" disabled={loading} />
+          <SocialButtons variant="register" disabled={loading} onGoogleClick={handleGoogleSignup} />
 
           {/* Divider */}
           <Divider text="Or continue with email" />
