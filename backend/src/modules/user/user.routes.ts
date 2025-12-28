@@ -7,6 +7,7 @@ const router = Router();
 // User routes (authenticated)
 router.get('/profile', authenticate, userController.getProfile);
 router.patch('/profile', authenticate, userController.updateProfile);
+router.post('/upgrade', authenticate, userController.upgradeToVIP);
 
 // Admin routes
 router.get('/', authenticate, adminOnly, userController.getAllUsers);

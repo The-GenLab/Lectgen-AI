@@ -172,6 +172,36 @@ class UserController {
       return errorResponse(res, error.message || 'Search failed', 500);
     }
   }
+
+  // Upgrade current user to VIP (authenticated)
+  async upgradeToVIP(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return errorResponse(res, 'Unauthorized', 401);
+      }
+
+      const { durationMonths } = req.body;
+
+      if (!durationMonths || (durationMonths !== 1 && durationMonths !== 12)) {
+        return errorResponse(res, 'durationMonths must be 1 (monthly) or 12 (yearly)', 400);
+      }
+
+      // Check if user is already VIP
+      if (req.user.role === 'VIP') {
+        return errorResponse(res, 'User is already VIP', 400);
+      }
+
+      const updatedUser = await userService.upgradeToVIP(req.user.id, durationMonths);
+
+      if (!updatedUser) {
+        return errorResponse(res, 'Failed to upgrade user', 500);
+      }
+
+      return successResponse(res, { user: updatedUser }, 'Successfully upgraded to VIP');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Failed to upgrade to VIP', 500);
+    }
+  }
 }
 
 export default new UserController();

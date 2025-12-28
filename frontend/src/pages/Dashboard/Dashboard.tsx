@@ -509,6 +509,7 @@ export default function Dashboard() {
                 className={styles.upgradeBtn}
                 icon={<ThunderboltOutlined />}
                 style={{ marginBottom: 8 }}
+                onClick={() => navigate('/settings/upgrade')}
               >
                 Upgrade to VIP
               </Button>

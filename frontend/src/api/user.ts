@@ -59,3 +59,22 @@ export const uploadAvatar = async (file: File) => {
 
   return result;
 };
+
+export const upgradeToVIP = async (durationMonths: number) => {
+  const response = await fetch(`${API_URL}/users/upgrade`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ durationMonths }),
+  });
+
+  const result = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to upgrade to VIP');
+  }
+
+  return result;
+};

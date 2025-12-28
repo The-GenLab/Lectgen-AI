@@ -151,7 +151,7 @@
 }
 
 .upgradeBtn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1677ff 0%, #0958d9 100%);
   border: none;
   color: white;
   font-weight: 500;
@@ -160,7 +160,7 @@
 }
 
 .upgradeBtn:hover {
-  background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%) !important;
+  background: linear-gradient(135deg, #0958d9 0%, #003eb3 100%) !important;
   color: white !important;
 }
 
