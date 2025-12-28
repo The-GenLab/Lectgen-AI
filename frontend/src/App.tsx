@@ -14,6 +14,8 @@ import PaymentSuccess from './pages/Payment/PaymentSuccess';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminUsageQuota from './pages/Admin/AdminUsageQuota';
 import AdminSystemLogs from './pages/Admin/AdminSystemLogs';
+import AdminUsers from './pages/Admin/AdminUsers';
+import AdminUserDetail from './pages/Admin/AdminUserDetail';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -33,6 +35,8 @@ function App() {
         <Route path="/checkout" element={<ProtectedRoute> <Checkout /> </ProtectedRoute>} />
         <Route path="/payment/success" element={<ProtectedRoute> <PaymentSuccess /> </ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute requireAdmin> <AdminDashboard /> </ProtectedRoute>} />
+        <Route path="/admin/users" element={<ProtectedRoute requireAdmin> <AdminUsers /> </ProtectedRoute>} />
+        <Route path="/admin/users/:id" element={<ProtectedRoute requireAdmin> <AdminUserDetail /> </ProtectedRoute>} />
         <Route path="/admin/usage" element={<ProtectedRoute requireAdmin> <AdminUsageQuota /> </ProtectedRoute>} />
         <Route path="/admin/logs" element={<ProtectedRoute requireAdmin> <AdminSystemLogs /> </ProtectedRoute>} />
       </Routes>
