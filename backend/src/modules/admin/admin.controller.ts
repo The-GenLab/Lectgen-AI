@@ -236,6 +236,44 @@ class AdminController {
     }
 
     /**
+     * GET /api/admin/billing
+     * Get billing/subscription statistics
+     */
+    async getBillingStats(req: Request, res: Response) {
+        try {
+            const { startDate, endDate } = req.query;
+
+            const stats = await adminService.getBillingStats(
+                startDate ? new Date(startDate as string) : undefined,
+                endDate ? new Date(endDate as string) : undefined
+            );
+
+            return successResponse(res, stats, 'Billing stats retrieved successfully');
+        } catch (error: any) {
+            return errorResponse(res, error.message || 'Failed to get billing stats', 500);
+        }
+    }
+
+    /**
+     * GET /api/admin/billing/trend
+     * Get revenue trend data for chart
+     */
+    async getRevenueTrend(req: Request, res: Response) {
+        try {
+            const { startDate, endDate } = req.query;
+
+            const trendData = await adminService.getRevenueTrend(
+                startDate ? new Date(startDate as string) : undefined,
+                endDate ? new Date(endDate as string) : undefined
+            );
+
+            return successResponse(res, trendData, 'Revenue trend retrieved successfully');
+        } catch (error: any) {
+            return errorResponse(res, error.message || 'Failed to get revenue trend', 500);
+        }
+    }
+
+    /**
      * GET /api/admin/settings
      * Get system settings
      */

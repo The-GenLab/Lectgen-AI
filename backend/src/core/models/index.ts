@@ -6,9 +6,13 @@ import TemplateFile from './TemplateFile';
 import UsageLog from './UsageLog';
 import Session from './Session';
 import SystemSettings from './SystemSettings';
+import Payment from './Payment';
+
+// Define associations (after all models are imported to avoid circular dependencies)
+User.hasMany(Payment, { foreignKey: 'userId', as: 'payments' });
 
 // Export all models
-export { User, Conversation, Message, TemplateFile, UsageLog, Session, SystemSettings };
+export { User, Conversation, Message, TemplateFile, UsageLog, Session, SystemSettings, Payment };
 
 // Sync database (development only)
 export const syncDatabase = async (force: boolean = false) => {

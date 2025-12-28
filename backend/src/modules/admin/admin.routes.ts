@@ -45,6 +45,11 @@ router.post('/users/:userId/reset-password', adminController.resetUserPassword);
 // POST /api/admin/users/:userId/avatar
 router.post('/users/:userId/avatar', upload.single('avatar'), adminController.uploadUserAvatar);
 
+// GET /api/admin/billing
+router.get('/billing', adminController.getBillingStats);
+// GET /api/admin/billing/trend
+router.get('/billing/trend', adminController.getRevenueTrend);
+
 // GET /api/admin/settings
 router.get('/settings', adminController.getSettings);
 // PATCH /api/admin/settings

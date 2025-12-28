@@ -1,5 +1,6 @@
 import { userRepository } from '../../core/repositories';
 import User from '../../core/models/User';
+import Payment from '../../core/models/Payment';
 import { UserRole, addMonths, QUOTA } from '../../shared/constants';
 import adminSettingsService from '../admin/admin-settings.service';
 
@@ -30,12 +31,35 @@ class UserService {
 
   // Upgrade user to VIP
   async upgradeToVIP(userId: string, durationMonths: number = 1): Promise<User | null> {
-    const subscriptionExpiresAt = addMonths(new Date(), durationMonths);
+    const now = new Date();
+    const subscriptionStartDate = now;
+    const subscriptionExpiresAt = addMonths(now, durationMonths);
+    
+    // Determine plan type and amount
+    const planType: 'monthly' | 'yearly' = durationMonths >= 12 ? 'yearly' : 'monthly';
+    const amount = planType === 'yearly' ? 144 : 12 * durationMonths;
 
-    return await userRepository.update(userId, {
+    // Update user to VIP
+    const updatedUser = await userRepository.update(userId, {
       role: UserRole.VIP,
       subscriptionExpiresAt,
     });
+
+    // Create payment record
+    if (updatedUser) {
+      await Payment.create({
+        userId,
+        amount,
+        planType,
+        paymentDate: now,
+        subscriptionStartDate,
+        subscriptionEndDate: subscriptionExpiresAt,
+        paymentMethod: 'momo',
+        status: 'completed',
+      });
+    }
+
+    return updatedUser;
   }
 
   // Downgrade VIP to FREE (when subscription expires)

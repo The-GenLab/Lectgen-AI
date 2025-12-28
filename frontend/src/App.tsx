@@ -19,6 +19,7 @@ import AdminUserDetail from './pages/Admin/AdminUserDetail';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminSettings from './pages/Admin/AdminSettings';
 import AdminAddUser from './pages/Admin/AdminAddUser';
+import AdminSubscriptions from './pages/Admin/AdminSubscriptions';
 import Maintenance from './pages/Maintenance/Maintenance';
 
 function App() {
@@ -44,6 +45,7 @@ function App() {
         <Route path="/admin/logs" element={<ProtectedRoute requireAdmin> <AdminSystemLogs /> </ProtectedRoute>} />
         <Route path="/admin/settings" element={<ProtectedRoute requireAdmin> <AdminSettings /> </ProtectedRoute>} />
         <Route path="/admin/users/add" element={<ProtectedRoute requireAdmin> <AdminAddUser /> </ProtectedRoute>} />
+        <Route path="/admin/billing" element={<ProtectedRoute requireAdmin> <AdminSubscriptions /> </ProtectedRoute>} />
         <Route path="/maintenance" element={<Maintenance />} />
       </Routes>
     </BrowserRouter>

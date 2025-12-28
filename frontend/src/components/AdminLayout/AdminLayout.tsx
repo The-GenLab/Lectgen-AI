@@ -7,7 +7,8 @@ import {
     Settings,
     FileText,
     LogOut,
-    Crown
+    Crown,
+    CreditCard
 } from 'lucide-react';
 import { getAvatarUrl } from '../../utils/file';
 import styles from './AdminLayout.module.css';
@@ -41,6 +42,12 @@ const menuItems: MenuItem[] = [
         icon: <BarChart3 size={20} />,
         label: 'Usage & Quota',
         path: '/admin/usage'
+    },
+    {
+        key: 'billing',
+        icon: <CreditCard size={20} />,
+        label: 'Billing',
+        path: '/admin/billing'
     },
     {
         key: 'settings',

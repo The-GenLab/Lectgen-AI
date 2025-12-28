@@ -5,6 +5,9 @@ import userService from '../user/user.service';
 import authService from '../auth/auth.service';
 import fileService from '../file/file.service';
 import adminSettingsService from './admin-settings.service';
+import Payment from '../../core/models/Payment';
+import User from '../../core/models/User';
+import { Op } from 'sequelize';
 import * as os from 'os';
 
 class AdminService {
@@ -382,6 +385,221 @@ class AdminService {
       maxSlidesPerMonth: user.maxSlidesPerMonth,
       subscriptionExpiresAt: user.subscriptionExpiresAt,
       createdAt: user.createdAt,
+    };
+  }
+
+  /**
+   * Get billing/subscription statistics
+   */
+  async getBillingStats(startDate?: Date, endDate?: Date) {
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+
+    // Get all active VIP users (with active subscriptions)
+    const activeVipUsers = await User.findAll({
+      where: {
+        role: UserRole.VIP,
+        subscriptionExpiresAt: {
+          [Op.gt]: now,
+        },
+      },
+    });
+
+    // Calculate total revenue from all completed payments in current month
+    const currentMonthPayments = await Payment.findAll({
+      where: {
+        status: 'completed',
+        paymentDate: {
+          [Op.gte]: currentMonthStart,
+          [Op.lte]: now,
+        },
+      },
+    });
+
+    let monthlyRevenue = 0;
+    currentMonthPayments.forEach(payment => {
+      // Add full amount for each payment (total revenue, not recurring monthly)
+      monthlyRevenue += parseFloat(payment.amount.toString());
+    });
+    monthlyRevenue = Math.round(monthlyRevenue * 100) / 100;
+
+    // Calculate previous month total revenue (all completed payments in previous month)
+    const previousMonthPayments = await Payment.findAll({
+      where: {
+        status: 'completed',
+        paymentDate: {
+          [Op.gte]: lastMonthStart,
+          [Op.lte]: lastMonthEnd,
+        },
+      },
+    });
+
+    let previousMonthRevenue = 0;
+    previousMonthPayments.forEach(payment => {
+      // Add full amount for each payment (total revenue)
+      previousMonthRevenue += parseFloat(payment.amount.toString());
+    });
+    previousMonthRevenue = Math.round(previousMonthRevenue * 100) / 100;
+
+    // Calculate monthly revenue change
+    const monthlyRevenueChange = previousMonthRevenue > 0
+      ? Math.round(((monthlyRevenue - previousMonthRevenue) / previousMonthRevenue) * 100 * 10) / 10
+      : monthlyRevenue > 0 ? 100 : 0;
+
+
+    // Get previous month active VIP users (users who were VIP and had active subscription at end of last month)
+    // A user was active last month if their subscription expired after last month end
+    const previousMonthActiveVip = await User.count({
+      where: {
+        role: UserRole.VIP,
+        subscriptionExpiresAt: {
+          [Op.gt]: lastMonthEnd,
+        },
+        createdAt: {
+          [Op.lte]: lastMonthEnd,
+        },
+      },
+    });
+
+    const vipUsersChange = previousMonthActiveVip > 0
+      ? Math.round(((activeVipUsers.length - previousMonthActiveVip) / previousMonthActiveVip) * 100 * 10) / 10
+      : activeVipUsers.length > 0 ? 100 : 0;
+
+    // Calculate conversion rate (only FREE and VIP users, exclude ADMIN)
+    const totalUsers = await User.count({
+      where: {
+        role: {
+          [Op.in]: [UserRole.FREE, UserRole.VIP],
+        },
+      },
+    });
+    const conversionRate = totalUsers > 0
+      ? Math.round((activeVipUsers.length / totalUsers) * 100 * 10) / 10
+      : 0;
+
+    // Previous month conversion rate (only FREE and VIP users)
+    const previousMonthTotal = await User.count({
+      where: {
+        role: {
+          [Op.in]: [UserRole.FREE, UserRole.VIP],
+        },
+        createdAt: {
+          [Op.lte]: lastMonthEnd,
+        },
+      },
+    });
+    const previousConversionRate = previousMonthTotal > 0
+      ? (previousMonthActiveVip / previousMonthTotal) * 100
+      : 0;
+
+    const conversionRateChange = Math.round((conversionRate - previousConversionRate) * 10) / 10;
+
+    // Get VIP subscribers with their latest payment info
+    const vipSubscribers = await User.findAll({
+      where: {
+        role: UserRole.VIP,
+        subscriptionExpiresAt: {
+          [Op.gt]: now,
+        },
+      },
+      order: [['subscriptionExpiresAt', 'DESC']],
+    });
+
+    // Get latest payment for each subscriber
+    const subscribersWithPayments = await Promise.all(
+      vipSubscribers.map(async (user) => {
+        const latestPayment = await Payment.findOne({
+          where: {
+            userId: user.id,
+            status: 'completed',
+          },
+          order: [['paymentDate', 'DESC']],
+        });
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          avatarUrl: user.avatarUrl,
+          subscriptionExpiresAt: user.subscriptionExpiresAt,
+          subscriptionStartDate: latestPayment?.subscriptionStartDate || null,
+          planType: latestPayment?.planType || 'monthly',
+          amount: latestPayment ? parseFloat(latestPayment.amount.toString()) : 0,
+          paymentDate: latestPayment?.paymentDate || null,
+        };
+      })
+    );
+
+    return {
+      monthlyRevenue,
+      activeVipUsers: activeVipUsers.length,
+      conversionRate,
+      monthlyRevenueChange,
+      vipUsersChange,
+      conversionRateChange,
+      subscribers: subscribersWithPayments,
+    };
+  }
+
+  /**
+   * Get revenue trend data for chart
+   */
+  async getRevenueTrend(startDate?: Date, endDate?: Date) {
+    const now = new Date();
+    const effectiveStart = startDate || new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Default: last 30 days
+    const effectiveEnd = endDate || now;
+
+    // Get all completed payments in the date range
+    const payments = await Payment.findAll({
+      where: {
+        status: 'completed',
+        paymentDate: {
+          [Op.gte]: effectiveStart,
+          [Op.lte]: effectiveEnd,
+        },
+      },
+      order: [['paymentDate', 'ASC']],
+    });
+
+    // Group payments by date
+    const revenueByDate: Record<string, number> = {};
+    payments.forEach(payment => {
+      const dateStr = new Date(payment.paymentDate).toISOString().split('T')[0]; // YYYY-MM-DD
+      if (!revenueByDate[dateStr]) {
+        revenueByDate[dateStr] = 0;
+      }
+      revenueByDate[dateStr] += parseFloat(payment.amount.toString());
+    });
+
+    // Generate array of all dates in range
+    const dates: string[] = [];
+    const currentDate = new Date(effectiveStart);
+    while (currentDate <= effectiveEnd) {
+      dates.push(currentDate.toISOString().split('T')[0]);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Create chart data with cumulative revenue
+    let cumulativeRevenue = 0;
+    const chartData = dates.map(date => {
+      const dailyRevenue = revenueByDate[date] || 0;
+      cumulativeRevenue += dailyRevenue;
+      return {
+        date,
+        revenue: parseFloat(dailyRevenue.toFixed(2)),
+        cumulativeRevenue: parseFloat(cumulativeRevenue.toFixed(2)),
+      };
+    });
+
+    return {
+      data: chartData,
+      totalRevenue: cumulativeRevenue,
+      period: {
+        startDate: effectiveStart.toISOString(),
+        endDate: effectiveEnd.toISOString(),
+      },
     };
   }
 }

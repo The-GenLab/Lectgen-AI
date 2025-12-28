@@ -222,3 +222,66 @@ export const createUser = async (data: CreateUserRequest): Promise<UserWithStats
     const response = await axios.post(`${API_BASE_URL}/admin/users`, data);
     return response.data.data;
 };
+
+/**
+ * Billing/Subscription API
+ */
+export interface BillingStats {
+    monthlyRevenue: number;
+    activeVipUsers: number;
+    conversionRate: number;
+    monthlyRevenueChange: number;
+    vipUsersChange: number;
+    conversionRateChange: number;
+    subscribers: Array<{
+        id: string;
+        email: string;
+        name: string;
+        avatarUrl?: string | null;
+        subscriptionExpiresAt: string | null;
+        subscriptionStartDate: string | null;
+        planType: 'monthly' | 'yearly';
+        amount: number;
+        paymentDate: string | null;
+    }>;
+}
+
+/**
+ * Get billing/subscription statistics
+ */
+export const getBillingStats = async (params?: {
+    startDate?: string;
+    endDate?: string;
+}): Promise<BillingStats> => {
+    const response = await axios.get(`${API_BASE_URL}/admin/billing`, { params });
+    return response.data.data;
+};
+
+/**
+ * Revenue Trend API
+ */
+export interface RevenueTrendData {
+    date: string;
+    revenue: number;
+    cumulativeRevenue: number;
+}
+
+export interface RevenueTrendResponse {
+    data: RevenueTrendData[];
+    totalRevenue: number;
+    period: {
+        startDate: string;
+        endDate: string;
+    };
+}
+
+/**
+ * Get revenue trend data for chart
+ */
+export const getRevenueTrend = async (params?: {
+    startDate?: string;
+    endDate?: string;
+}): Promise<RevenueTrendResponse> => {
+    const response = await axios.get(`${API_BASE_URL}/admin/billing/trend`, { params });
+    return response.data.data;
+};
