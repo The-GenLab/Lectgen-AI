@@ -426,7 +426,7 @@ export default function AdminDashboard() {
                                         <div className="text-sm text-slate-400 text-center py-8">No distribution data available</div>
                                     )}
 
-                                    <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                    <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-100 dark:border-slate-800 justify-center">
                                         {userDist.map((d, i) => {
                                             const colors = ['#60a5fa', '#136dec', '#94a3b8'];
                                             return (
@@ -495,13 +495,18 @@ export default function AdminDashboard() {
                                                     layout="vertical"
                                                     verticalAlign="middle"
                                                     align="right"
-                                                    wrapperStyle={{ paddingLeft: "20px", fontSize: '12px' }}
+                                                    wrapperStyle={{ 
+                                                        paddingLeft: "50px", 
+                                                        fontSize: '12px',
+                                                        lineHeight: '2'
+                                                    }}
                                                     iconType="circle"
+                                                    iconSize={10}
                                                     formatter={(value, entry: any) => {
                                                         const v = entry?.payload?.value || 0;
                                                         const pct = inputTotal ? Math.round((v / inputTotal) * 100) : 0;
                                                         return (
-                                                            <span style={{ color: '#475569', fontWeight: 500 }}>
+                                                            <span style={{ color: '#475569', fontWeight: 500, paddingLeft: '10px' }}>
                                                                 {humanize(value)}: <span style={{ color: '#94a3b8', fontWeight: 600 }}>{v}</span>
                                                             </span>
                                                         );
