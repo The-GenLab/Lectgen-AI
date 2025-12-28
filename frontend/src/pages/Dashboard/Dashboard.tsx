@@ -215,31 +215,69 @@ export default function Dashboard() {
     analysisResult: any
   ) => {
     if (!templateImage || !topic.trim()) {
-      alert('Vui lòng upload ảnh template và nhập chủ đề!');
+      antdMessage.warning('Vui lòng upload ảnh template và nhập chủ đề!');
       return;
     }
 
+    setIsLoading(true);
+
     try {
-      console.log('Chủ đề:', topic);
-      console.log('File:', templateImage.name);
-      console.log('Phân tích:', JSON.stringify(analysisResult, null, 2));
+      console.log('Uploading template and generating presentation...');
+      console.log('Topic:', topic);
+      console.log('Analysis:', analysisResult);
 
-      // Upload template to MinIO
+      // 1. Upload template to MinIO
       const uploadedTemplate = await uploadTemplateImage(templateImage);
-      console.log('Upload thành công:', uploadedTemplate);
+      console.log('Template uploaded:', uploadedTemplate);
+      
+      if (!uploadedTemplate.fileUrl) {
+        throw new Error('Template upload failed - no fileUrl returned');
+      }
 
-      // Show success alert
-      alert('Upload thành công!\n\n' +
-        `Chủ đề: ${topic}\n\n` +
-        `Template ID: ${uploadedTemplate.id}\n\n` +
-        `File URL: ${uploadedTemplate.fileUrl}\n\n` +
-        `Phân tích:\n${JSON.stringify(analysisResult, null, 2)}`);
+      // 2. Call chat API with IMAGE type and style analysis
+      console.log('Calling chat API with:', {
+        messageType: 'IMAGE',
+        contentText: topic,
+        imageUrl: uploadedTemplate.fileUrl,
+        styleAnalysis: analysisResult,
+      });
 
+      const response = await sendMessage({
+        conversationId,
+        messageType: 'IMAGE',
+        contentText: topic,
+        imageUrl: uploadedTemplate.fileUrl,
+        styleAnalysis: analysisResult,
+      });
+
+      // Update conversation ID and title if new
+      if (!conversationId) {
+        setConversationId(response.data.conversation.id);
+        setConversationTitle(response.data.conversation.title);
+      }
+
+      // Add both user and assistant messages
+      setMessages([
+        ...messages,
+        response.data.userMessage,
+        response.data.assistantMessage,
+      ]);
+
+      antdMessage.success('Đã tạo bài thuyết trình LaTeX theo mẫu!');
+      
       // Switch về text tab
       setActiveTab('text');
     } catch (error: any) {
-      console.error('Upload error:', error);
-      alert('Lỗi upload: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+      console.error('Error generating from template:', error);
+      console.error('Error details:', error.response?.data);
+      
+      const errorMsg = error.response?.data?.message 
+        || error.message 
+        || 'Không thể tạo bài thuyết trình từ template';
+      
+      antdMessage.error(errorMsg);
+    } finally {
+      setIsLoading(false);
     }
   };
 

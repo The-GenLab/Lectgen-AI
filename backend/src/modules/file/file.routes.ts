@@ -18,4 +18,8 @@ router.delete('/avatar', authenticate, fileController.deleteAvatar);
 // Public route để lấy ảnh: GET /api/files/:bucket/avatars/:filename
 router.get('/:bucket/avatars/:filename', fileController.getAvatar);
 
+// Generic route để lấy template files: GET /api/files/:bucket/:filename
+// Supports paths like: /api/files/template-files/uuid-123.jpg
+router.get('/:bucket/:filename', fileController.getFile);
+
 export default router;

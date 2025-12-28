@@ -76,6 +76,40 @@ class FileService {
       throw new Error('Failed to get avatar');
     }
   }
+
+  /**
+   * Get file from MinIO (generic - supports any bucket)
+   * @param filePath - Format: /bucket-name/object-name.ext
+   */
+  async getFile(filePath: string): Promise<{ stream: any; contentType: string; size: number }> {
+    try {
+      // Parse filePath: /template-files/uuid-filename.jpg -> bucket: template-files, object: uuid-filename.jpg
+      const pathParts = filePath.split('/').filter(p => p);
+      if (pathParts.length < 2) {
+        throw new Error('Invalid file path format');
+      }
+
+      const bucketName = pathParts[0];
+      const objectKey = pathParts.slice(1).join('/');
+
+      console.log(`[FileService] Getting file from bucket: ${bucketName}, object: ${objectKey}`);
+
+      // Get file stream from MinIO
+      const stream = await minioClient.getObject(bucketName, objectKey);
+      
+      // Get file metadata
+      const stat = await minioClient.statObject(bucketName, objectKey);
+
+      return {
+        stream,
+        contentType: stat.metaData['content-type'] || 'application/octet-stream',
+        size: stat.size,
+      };
+    } catch (error) {
+      console.error('Error getting file from MinIO:', error);
+      throw new Error('Failed to get file');
+    }
+  }
 }
 
 export default new FileService();

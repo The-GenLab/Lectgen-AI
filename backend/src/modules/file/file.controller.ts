@@ -63,6 +63,30 @@ class FileController {
       return errorResponse(res, error.message || 'Failed to get avatar', 404);
     }
   }
+
+  /**
+   * Get any file from MinIO (generic endpoint)
+   * GET /api/files/:bucket/:filename
+   */
+  async getFile(req: Request, res: Response) {
+    try {
+      const { bucket, filename } = req.params;
+      const filePath = `/${bucket}/${filename}`;
+      
+      console.log('[FileController] Getting file:', filePath);
+
+      const { stream, contentType, size } = await fileService.getFile(filePath);
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Length', size);
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache 1 day
+
+      stream.pipe(res);
+    } catch (error: any) {
+      console.error('[FileController] Get file error:', error);
+      return errorResponse(res, error.message || 'Failed to get file', 404);
+    }
+  }
 }
 
 export default new FileController();

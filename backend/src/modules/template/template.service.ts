@@ -61,8 +61,9 @@ class TemplateService {
             file.mimetype
         );
 
-        // generate presigned URL
-        const fileUrl = await storageService.getPresignedUrl(bucketName, objectName);
+        // Save relative path instead of presigned URL (permanent)
+        // Format: /template-files/uuid-filename.jpg
+        const fileUrl = `/${bucketName}/${objectName}`;
 
         // save to database
         const templateFile = await TemplateFile.create({

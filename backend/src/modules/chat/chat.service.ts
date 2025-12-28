@@ -78,17 +78,24 @@ class ChatService {
       prompt = contentText;
     } else if (messageType === MessageType.AUDIO && transcript) {
       prompt = transcript;
-    } else if (messageType === MessageType.IMAGE && styleAnalysis) {
-      // Combine content with style analysis
-      const stylePrompt = this.buildStylePrompt(styleAnalysis);
-      prompt = contentText 
-        ? `${contentText}\n\nStyle requirements: ${stylePrompt}`
-        : `Create a presentation with this style: ${stylePrompt}`;
+    } else if (messageType === MessageType.IMAGE) {
+      // For IMAGE type, combine topic with style analysis
+      if (styleAnalysis) {
+        const stylePrompt = this.buildStylePrompt(styleAnalysis);
+        prompt = contentText 
+          ? `${contentText}\n\nStyle requirements: ${stylePrompt}`
+          : `Create a presentation with this style: ${stylePrompt}`;
+      } else {
+        // If no style analysis, just use contentText
+        prompt = contentText || 'Create a presentation based on the uploaded template';
+      }
     }
 
     if (!prompt) {
       throw new Error('Unable to generate prompt from message');
     }
+
+    console.log('[ChatService] Generated prompt for AI:', prompt.substring(0, 200));
 
     // 4. Generate LaTeX from AI
     console.log('[ChatService] Generating LaTeX for prompt:', prompt.substring(0, 100));

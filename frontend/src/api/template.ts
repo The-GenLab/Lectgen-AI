@@ -50,7 +50,7 @@ export async function uploadTemplateImage(
         formData.append('conversationId', conversationId);
     }
 
-    const response = await api.post<{ success: boolean; data: TemplateFile }>(
+    const response = await api.post<{ success: boolean; data: TemplateFile | TemplateFile[] }>(
         '/template/upload',
         formData,
         {
@@ -60,7 +60,9 @@ export async function uploadTemplateImage(
         }
     );
 
-    return response.data.data;
+    // Backend returns single object if 1 file, array if multiple
+    const data = response.data.data;
+    return Array.isArray(data) ? data[0] : data;
 }
 
 /**

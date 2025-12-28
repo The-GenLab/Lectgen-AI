@@ -20,7 +20,10 @@ class TemplateController {
    */
   async uploadTemplate(req: any, res: Response) {
     try {
-      if (!req.files || req.files.length === 0) {
+      // Support both single file (req.file) and multiple files (req.files)
+      const files = req.files || (req.file ? [req.file] : []);
+      
+      if (files.length === 0) {
         return errorResponse(res, 'No files uploaded', 400);
       }
 
@@ -28,12 +31,15 @@ class TemplateController {
       const conversationId = req.body.conversationId;
 
       const uploadedFiles = await Promise.all(
-        req.files.map((file: UploadedFile) =>
+        files.map((file: UploadedFile) =>
           templateService.uploadTemplate(file, userId, conversationId)
         )
       );
 
-      return successResponse(res, uploadedFiles, `${uploadedFiles.length} file(s) uploaded successfully`, 201);
+      // If single file, return single object; if multiple, return array
+      const responseData = files.length === 1 ? uploadedFiles[0] : uploadedFiles;
+
+      return successResponse(res, responseData, `${uploadedFiles.length} file(s) uploaded successfully`, 201);
     } catch (error) {
       console.error('Upload template error:', error);
       return errorResponse(res, error instanceof Error ? error.message : 'Failed to upload template');
