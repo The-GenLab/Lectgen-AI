@@ -17,6 +17,28 @@ export const syncDatabase = async (force: boolean = false) => {
 
     if (force) {
       console.log('⚠️  Dropping all tables...');
+    } else {
+      // Handle migration for sessions table: delete existing sessions before adding refreshToken NOT NULL constraint
+      try {
+        const [results] = await sequelize.query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_schema = 'public' 
+          AND table_name = 'sessions' 
+          AND column_name = 'refreshToken'
+        `);
+        
+        // If refreshToken column doesn't exist yet, delete existing sessions
+        // because they won't have refreshToken values and will violate NOT NULL constraint
+        if (!Array.isArray(results) || results.length === 0) {
+          console.log('🔄 Preparing sessions table migration: deleting existing sessions...');
+          await sequelize.query('DELETE FROM sessions');
+          console.log('✅ Existing sessions deleted.');
+        }
+      } catch (migrationError) {
+        // Table might not exist yet, ignore the error
+        console.log('ℹ️  Sessions table migration check skipped (table may not exist yet)');
+      }
     }
 
     await sequelize.sync({ force, alter: !force });

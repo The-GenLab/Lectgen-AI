@@ -301,23 +301,23 @@ export default function AdminDashboard() {
                             <div className="flex justify-between items-start mb-6">
                                 <div>
                                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Slides Generated Over Time</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Comparing daily generation volume</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Comparing daily generation volume</p>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 bg-slate-50 dark:bg-slate-800 p-1 rounded-lg">
                                     <button
-                                        className={`px-3 py-1 text-xs font-medium rounded-md ${granularity === 'day' ? 'bg-primary text-white shadow-sm' : 'bg-slate-100'}`}
+                                        className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${granularity === 'day' ? 'bg-primary text-white shadow-sm shadow-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
                                         onClick={() => { setGranularity('day'); fetchUsageLogsForChart(range?.[0], range?.[1], 'day'); }}
                                     >
                                         Week
                                     </button>
                                     <button
-                                        className={`px-3 py-1 text-xs font-medium rounded-md ${granularity === 'month' ? 'bg-primary text-white shadow-sm' : 'bg-slate-100'}`}
+                                        className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${granularity === 'month' ? 'bg-primary text-white shadow-sm shadow-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
                                         onClick={() => { setGranularity('month'); fetchUsageLogsForChart(range?.[0], range?.[1], 'month'); }}
                                     >
                                         Month
                                     </button>
                                     <button
-                                        className={`px-3 py-1 text-xs font-medium rounded-md ${granularity === 'year' ? 'bg-primary text-white shadow-sm' : 'bg-slate-100'}`}
+                                        className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${granularity === 'year' ? 'bg-primary text-white shadow-sm shadow-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
                                         onClick={() => { setGranularity('year'); fetchUsageLogsForChart(range?.[0], range?.[1], 'year'); }}
                                     >
                                         Year
@@ -325,15 +325,41 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
 
-                            <div className="relative h-[300px] w-full mt-4">
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <LineChart data={timeSeries} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="date" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Legend />
-                                        <Line type="monotone" dataKey="value" stroke="#136dec" strokeWidth={3} dot={false} />
+                            <div className="relative h-[320px] w-full">
+                                <ResponsiveContainer width="100%" height={320}>
+                                    <LineChart data={timeSeries} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeOpacity={0.5} />
+                                        <XAxis 
+                                            dataKey="date" 
+                                            tick={{ fill: '#64748b', fontSize: 12 }}
+                                            tickLine={{ stroke: '#cbd5e1' }}
+                                            stroke="#cbd5e1"
+                                            tickFormatter={formatXAxis}
+                                        />
+                                        <YAxis 
+                                            tick={{ fill: '#64748b', fontSize: 12 }}
+                                            tickLine={{ stroke: '#cbd5e1' }}
+                                            stroke="#cbd5e1"
+                                        />
+                                        <Tooltip 
+                                            contentStyle={{ 
+                                                backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                                                border: '1px solid #e2e8f0',
+                                                borderRadius: '8px',
+                                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                                padding: '12px'
+                                            }}
+                                            labelStyle={{ color: '#1e293b', fontWeight: 600, marginBottom: '4px' }}
+                                            itemStyle={{ color: '#136dec', fontWeight: 600 }}
+                                        />
+                                        <Line 
+                                            type="monotone" 
+                                            dataKey="value" 
+                                            stroke="#136dec" 
+                                            strokeWidth={3} 
+                                            dot={{ fill: '#136dec', strokeWidth: 2, r: 4 }} 
+                                            activeDot={{ r: 6, strokeWidth: 2, stroke: '#ffffff', fill: '#136dec' }}
+                                        />
                                     </LineChart>
                                 </ResponsiveContainer>
                             </div>
@@ -343,73 +369,140 @@ export default function AdminDashboard() {
                             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 flex-1">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">User Distribution</h3>
                                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Active Free vs VIP Users</p>
-                                <div className="flex items-center gap-4">
-                                    <div className="w-full">
-                                        {roleSeries.length ? (
-                                            <div style={{ width: '100%', height: 200 }}>
-                                                <ResponsiveContainer>
-                                                    <BarChart data={roleSeries} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                                                        <CartesianGrid strokeDasharray="3 3" />
-                                                        <XAxis dataKey="date" tickFormatter={formatXAxis} />
-                                                        <YAxis />
-                                                        <Tooltip />
-                                                        <Legend />
-                                                        <Bar dataKey="FREE" fill="#cfe9ff" name="Free" />
-                                                        <Bar dataKey="VIP" fill="#136dec" name="VIP" />
-                                                        <Bar dataKey="ADMIN" fill="#b0b0b0" name="Admin" />
-                                                    </BarChart>
-                                                </ResponsiveContainer>
-                                            </div>
-                                        ) : (
-                                            <div className="text-sm text-slate-400">No distribution data available</div>
-                                        )}
-
-                                        <div className="flex flex-col gap-2 mt-4">
-                                            {userDist.map((d, i) => (
-                                                <div key={`ud-${i}`} className="flex items-center gap-2">
-                                                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }}></span>
-                                                    <span className="text-xs font-medium text-slate-600">{d.name} ({d.value})</span>
-                                                </div>
-                                            ))}
+                                <div className="flex flex-col gap-4">
+                                    {roleSeries.length ? (
+                                        <div style={{ width: '100%', height: 220 }}>
+                                            <ResponsiveContainer>
+                                                <BarChart data={roleSeries} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+                                                    <defs>
+                                                        <linearGradient id="freeGradient" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="0%" stopColor="#60a5fa" stopOpacity={1}/>
+                                                            <stop offset="100%" stopColor="#3b82f6" stopOpacity={1}/>
+                                                        </linearGradient>
+                                                        <linearGradient id="vipGradient" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="0%" stopColor="#136dec" stopOpacity={1}/>
+                                                            <stop offset="100%" stopColor="#0958d9" stopOpacity={1}/>
+                                                        </linearGradient>
+                                                        <linearGradient id="adminGradient" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="0%" stopColor="#94a3b8" stopOpacity={1}/>
+                                                            <stop offset="100%" stopColor="#64748b" stopOpacity={1}/>
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeOpacity={0.5} />
+                                                    <XAxis 
+                                                        dataKey="date" 
+                                                        tickFormatter={formatXAxis}
+                                                        tick={{ fill: '#64748b', fontSize: 11 }}
+                                                        tickLine={{ stroke: '#cbd5e1' }}
+                                                        stroke="#cbd5e1"
+                                                    />
+                                                    <YAxis 
+                                                        tick={{ fill: '#64748b', fontSize: 11 }}
+                                                        tickLine={{ stroke: '#cbd5e1' }}
+                                                        stroke="#cbd5e1"
+                                                    />
+                                                    <Tooltip 
+                                                        contentStyle={{ 
+                                                            backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                                                            border: '1px solid #e2e8f0',
+                                                            borderRadius: '8px',
+                                                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                                            padding: '12px'
+                                                        }}
+                                                        labelStyle={{ color: '#1e293b', fontWeight: 600, marginBottom: '4px' }}
+                                                    />
+                                                    <Legend 
+                                                        wrapperStyle={{ paddingTop: '20px' }}
+                                                        iconType="square"
+                                                        formatter={(value) => <span style={{ color: '#64748b', fontSize: '12px', fontWeight: 500 }}>{value}</span>}
+                                                    />
+                                                    <Bar dataKey="FREE" fill="url(#freeGradient)" name="Free" radius={[4, 4, 0, 0]} />
+                                                    <Bar dataKey="VIP" fill="url(#vipGradient)" name="VIP" radius={[4, 4, 0, 0]} />
+                                                    <Bar dataKey="ADMIN" fill="url(#adminGradient)" name="Admin" radius={[4, 4, 0, 0]} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
                                         </div>
+                                    ) : (
+                                        <div className="text-sm text-slate-400 text-center py-8">No distribution data available</div>
+                                    )}
+
+                                    <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                        {userDist.map((d, i) => {
+                                            const colors = ['#60a5fa', '#136dec', '#94a3b8'];
+                                            return (
+                                                <div key={`ud-${i}`} className="flex items-center gap-2">
+                                                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: colors[i % colors.length] }}></span>
+                                                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{d.name}</span>
+                                                    <span className="text-xs font-bold text-slate-900 dark:text-white">({d.value})</span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
 
                             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 flex-1">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Input Source</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">How users start generation</p>
-                                <div className="flex items-center mt-4" style={{ height: 220 }}>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">How users start generation</p>
+                                <div className="flex items-center justify-center" style={{ height: 240 }}>
                                     {inputSourceData && inputSourceData.length ? (
                                         <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
+                                                <defs>
+                                                    <linearGradient id="sourceGradient0" x1="0" y1="0" x2="1" y2="1">
+                                                        <stop offset="0%" stopColor="#136dec" stopOpacity={1}/>
+                                                        <stop offset="100%" stopColor="#0958d9" stopOpacity={1}/>
+                                                    </linearGradient>
+                                                    <linearGradient id="sourceGradient1" x1="0" y1="0" x2="1" y2="1">
+                                                        <stop offset="0%" stopColor="#60a5fa" stopOpacity={1}/>
+                                                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={1}/>
+                                                    </linearGradient>
+                                                </defs>
                                                 <Pie
                                                     data={inputSourceData}
                                                     dataKey="value"
                                                     nameKey="name"
-                                                    cx="40%" // Đẩy tâm biểu đồ sang trái một chút
+                                                    cx="50%"
                                                     cy="50%"
-                                                    innerRadius={55}
-                                                    outerRadius={75}
-                                                    paddingAngle={10}
+                                                    innerRadius={60}
+                                                    outerRadius={85}
+                                                    paddingAngle={3}
                                                     labelLine={false}
+                                                    label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
                                                 >
                                                     {inputSourceData.map((_, index) => (
-                                                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                                                        <Cell 
+                                                            key={`cell-${index}`} 
+                                                            fill={index === 0 ? 'url(#sourceGradient0)' : 'url(#sourceGradient1)'}
+                                                        />
                                                     ))}
                                                 </Pie>
-                                                <Tooltip formatter={(value: any) => [value, 'Total']} />
+                                                <Tooltip 
+                                                    contentStyle={{ 
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                                                        border: '1px solid #e2e8f0',
+                                                        borderRadius: '8px',
+                                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                                        padding: '12px'
+                                                    }}
+                                                    formatter={(value: any, name: any) => {
+                                                        const v = Number(value);
+                                                        const pct = inputTotal ? Math.round((v / inputTotal) * 100) : 0;
+                                                        return [`${v} (${pct}%)`, humanize(name)];
+                                                    }}
+                                                />
                                                 <Legend
                                                     layout="vertical"
                                                     verticalAlign="middle"
                                                     align="right"
-                                                    wrapperStyle={{ paddingLeft: "10px" }}
+                                                    wrapperStyle={{ paddingLeft: "20px", fontSize: '12px' }}
+                                                    iconType="circle"
                                                     formatter={(value, entry: any) => {
                                                         const v = entry?.payload?.value || 0;
                                                         const pct = inputTotal ? Math.round((v / inputTotal) * 100) : 0;
                                                         return (
-                                                            <span className="text-xs font-medium text-slate-700">
-                                                                {humanize(value)}: <span className="text-slate-400">{v} ({pct}%)</span>
+                                                            <span style={{ color: '#475569', fontWeight: 500 }}>
+                                                                {humanize(value)}: <span style={{ color: '#94a3b8', fontWeight: 600 }}>{v}</span>
                                                             </span>
                                                         );
                                                     }}
@@ -417,7 +510,7 @@ export default function AdminDashboard() {
                                             </PieChart>
                                         </ResponsiveContainer>
                                     ) : (
-                                        <div className="text-sm text-slate-400 w-full text-center">No input source data available</div>
+                                        <div className="text-sm text-slate-400 w-full text-center py-8">No input source data available</div>
                                     )}
                                 </div>
                             </div>
