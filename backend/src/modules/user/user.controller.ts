@@ -3,7 +3,7 @@ import userService from './user.service';
 import { successResponse, errorResponse } from '../../shared/utils/response';
 
 class UserController {
-  // Get current user profile (same as auth/me, but can be extended)
+  // Get current user profile (same as auth/me, but can be extended )
   async getProfile(req: Request, res: Response) {
     try {
       if (!req.user) {
