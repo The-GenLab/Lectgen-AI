@@ -457,8 +457,8 @@ export default function Dashboard() {
 
           {/* Bottom Section */}
           <div className={styles.siderBottom}>
-            {/* Usage */}
-            {currentUser && (
+            {/* Usage - Only show for FREE users */}
+            {currentUser && currentUser?.role?.toUpperCase() === 'FREE' && (
               <div className={styles.usageSection}>
                 <Text className={styles.usageLabel}>Monthly Limit</Text>
                 <Text className={styles.usageText}>
@@ -469,6 +469,16 @@ export default function Dashboard() {
                   showInfo={false}
                   strokeColor="#1677FF"
                 />
+              </div>
+            )}
+
+            {/* VIP users - Show unlimited */}
+            {currentUser && currentUser?.role?.toUpperCase() === 'VIP' && (
+              <div className={styles.usageSection}>
+                <Text className={styles.usageLabel}>Plan</Text>
+                <Text className={styles.usageText} style={{ color: '#1677FF', fontWeight: 600 }}>
+                  Unlimited Access
+                </Text>
               </div>
             )}
 
