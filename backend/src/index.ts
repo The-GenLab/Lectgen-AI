@@ -11,6 +11,7 @@ import fileRoutes from "./modules/file/file.routes";
 import templateRoutes from "./modules/template/template.routes";
 import speechRoutes from "./modules/speech/speech.routes";
 import adminRoutes from "./modules/admin/admin.routes";
+import chatRoutes from "./modules/chat/chat.routes";
 import {
   errorHandler,
   notFoundHandler,
@@ -59,6 +60,7 @@ app.use("/api/conversations", conversationRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/speech", speechRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/chat", chatRoutes); // Chat route - combines conversation + AI
 app.use("/api/admin", adminRoutes);
 
 app.get("/", (req: Request, res: Response) => {

@@ -33,6 +33,8 @@ import { uploadTemplateImage } from '../../api/template';
 import { getCurrentUser, logout } from '../../utils/auth';
 import { getProfile } from '../../api/user';
 import { getAvatarUrl } from '../../utils/file';
+import { sendMessage, type Message as ChatMessage } from '../../api/chat';
+import { message as antdMessage } from 'antd';
 import styles from './Dashboard.module.css';
 
 const { Sider, Header, Content } = Layout;
@@ -41,19 +43,11 @@ const { Title, Text, Paragraph } = Typography;
 export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [input, setInput] = useState('');
-  const [currentChat] = useState('Marketing Strategy 2024');
+  const [conversationId, setConversationId] = useState<string | undefined>(undefined);
+  const [conversationTitle, setConversationTitle] = useState('New Conversation');
   const [activeTab, setActiveTab] = useState('text');
-  const [messages, setMessages] = useState<Array<{
-    id: string;
-    type: 'user' | 'ai';
-    content: string;
-    timestamp: string;
-    template?: {
-      fileName: string;
-      topic: string;
-      analysisResult: any;
-    };
-  }>>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Mock data
   const chatHistory = {
@@ -171,22 +165,43 @@ export default function Dashboard() {
     }
   };
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
 
-    // Add user message to chat
-    const userMessage = {
-      id: Date.now().toString(),
-      type: 'user' as const,
-      content: input,
-      timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-    };
+    const userPrompt = input;
+    setInput(''); // Clear input immediately
+    setIsLoading(true);
 
-    setMessages([...messages, userMessage]);
-    console.log('Creating presentation with text:', input);
-    setInput('');
+    try {
+      // Call chat API
+      const response = await sendMessage({
+        conversationId,
+        messageType: 'TEXT',
+        contentText: userPrompt,
+      });
 
-    // TODO: Call API to create presentation and add AI response
+      // Update conversation ID and title if new
+      if (!conversationId) {
+        setConversationId(response.data.conversation.id);
+        setConversationTitle(response.data.conversation.title);
+      }
+
+      // Add both user and assistant messages
+      setMessages([
+        ...messages,
+        response.data.userMessage,
+        response.data.assistantMessage,
+      ]);
+
+      antdMessage.success('Đã tạo bài thuyết trình LaTeX!');
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      antdMessage.error(error.response?.data?.message || 'Không thể tạo bài thuyết trình');
+      // Restore input if failed
+      setInput(userPrompt);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleTranscriptReady = (transcript: string) => {
@@ -366,7 +381,7 @@ export default function Dashboard() {
         {/* Header */}
         <Header className={styles.header}>
           <Text className={styles.headerTitle}>
-            Current Chat: <strong>{currentChat}</strong>
+            Current Chat: <strong>{conversationTitle}</strong>
           </Text>
           <Button type="text" icon={<EllipsisOutlined />} />
         </Header>
@@ -375,7 +390,116 @@ export default function Dashboard() {
         <Content className={styles.content}>
           <div className={styles.messagesContainer}>
             {/* Render dynamic messages */}
-            {messages.length === 0 ? (
+            {messages.length > 0 ? (
+              messages.map((msg) => (
+                <div key={msg.id} className={styles.messageRow}>
+                  {msg.role === 'USER' ? (
+                    // User message
+                    <div className={styles.userMessage}>
+                      <div className={styles.messageBubble}>
+                        <Text className={styles.messageText}>
+                          {msg.contentText}
+                        </Text>
+                        <Text className={styles.timestamp}>
+                          {new Date(msg.createdAt).toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </Text>
+                      </div>
+                    </div>
+                  ) : (
+                    // AI message
+                    <div className={styles.aiMessage}>
+                      <Avatar
+                        icon={<RobotOutlined />}
+                        className={styles.aiAvatar}
+                        size={32}
+                      />
+                      <div>
+                        <div className={styles.aiTextBubble}>
+                          <Text>
+                            Đã tạo bài thuyết trình LaTeX ({msg.slideCount || 0} slides)
+                          </Text>
+                        </div>
+
+                        {/* LaTeX Code Card */}
+                        <Card className={styles.presentationCard}>
+                          <div className={styles.cardContent}>
+                            <div className={styles.thumbnail}>
+                              <div className={styles.thumbnailPlaceholder}>
+                                <FileTextOutlined style={{ fontSize: 48, color: '#1677FF' }} />
+                              </div>
+                              <div className={styles.slideOverlay}>LaTeX</div>
+                            </div>
+
+                            <div className={styles.cardDetails}>
+                              <div className={styles.cardHeader}>
+                                <Title level={5} className={styles.cardTitle}>
+                                  Bài thuyết trình LaTeX
+                                </Title>
+                                <Tag color="success" className={styles.readyTag}>READY</Tag>
+                              </div>
+
+                              <Paragraph className={styles.cardDescription}>
+                                {msg.slideCount} slides • LaTeX Beamer presentation
+                              </Paragraph>
+
+                              <div className={styles.cardMeta}>
+                                <Space size={16}>
+                                  <Text type="secondary">📊 {msg.slideCount} Slides</Text>
+                                  <Text type="secondary">⏱ {new Date(msg.createdAt).toLocaleTimeString()}</Text>
+                                  <Text type="secondary">📝 {msg.contentText?.length || 0} chars</Text>
+                                </Space>
+                              </div>
+
+                              <div className={styles.cardActions}>
+                                <Button
+                                  type="primary"
+                                  icon={<DownloadOutlined />}
+                                  size="large"
+                                  className={styles.downloadBtn}
+                                  onClick={() => {
+                                    // Download LaTeX as .tex file
+                                    const blob = new Blob([msg.contentText || ''], { type: 'text/plain' });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `presentation-${msg.id}.tex`;
+                                    a.click();
+                                    URL.revokeObjectURL(url);
+                                  }}
+                                >
+                                  Download LaTeX
+                                </Button>
+                                <Button
+                                  icon={<EditOutlined />}
+                                  size="large"
+                                  onClick={() => {
+                                    // Copy LaTeX to clipboard
+                                    navigator.clipboard.writeText(msg.contentText || '');
+                                    antdMessage.success('Đã copy LaTeX code!');
+                                  }}
+                                >
+                                  Copy Code
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+
+                        <Text className={styles.timestamp}>
+                          {new Date(msg.createdAt).toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </Text>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
               // Show placeholder when no messages
               <>
                 {/* User Message */}
@@ -468,32 +592,6 @@ export default function Dashboard() {
                   </div>
                 </div>
               </>
-            ) : (
-              // Render actual messages from state
-              messages.map((msg) => (
-                <div key={msg.id} className={styles.messageRow}>
-                  <div className={msg.type === 'user' ? styles.userMessage : styles.aiMessage}>
-                    {msg.type === 'ai' && (
-                      <Avatar
-                        icon={<RobotOutlined />}
-                        className={styles.aiAvatar}
-                        size={32}
-                      />
-                    )}
-                    <div className={msg.type === 'user' ? styles.messageBubble : ''}>
-                      <Text className={styles.messageText}>{msg.content}</Text>
-                      {msg.template && (
-                        <div style={{ marginTop: 8, fontSize: 12, color: '#888' }}>
-                          Template: {msg.template.fileName}<br />
-                          Style: {msg.template.analysisResult?.colorScheme}<br />
-                          Layout: {msg.template.analysisResult?.layoutType}
-                        </div>
-                      )}
-                      <Text className={styles.timestamp}>{msg.timestamp}</Text>
-                    </div>
-                  </div>
-                </div>
-              ))
             )}
           </div>
 
@@ -534,6 +632,7 @@ export default function Dashboard() {
                           value={input}
                           onChange={(e) => setInput(e.target.value)}
                           onPressEnter={handleSend}
+                          disabled={isLoading}
                           className={styles.input}
                           suffix={
                             <Button
@@ -541,7 +640,8 @@ export default function Dashboard() {
                               shape="circle"
                               icon={<SendOutlined />}
                               onClick={handleSend}
-                              disabled={!input.trim()}
+                              disabled={!input.trim() || isLoading}
+                              loading={isLoading}
                               className={styles.sendBtn}
                             />
                           }

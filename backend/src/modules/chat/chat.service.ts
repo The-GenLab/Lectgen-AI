@@ -1,0 +1,164 @@
+import { conversationRepository, messageRepository, userRepository } from '../../core/repositories';
+import Conversation from '../../core/models/Conversation';
+import Message from '../../core/models/Message';
+import { MessageRole, MessageType } from '../../shared/constants';
+import aiService from '../ai/ai.service';
+import conversationService from '../conversation/conversation.service';
+
+interface SendMessageParams {
+  userId: string;
+  conversationId?: string;
+  messageType: MessageType;
+  contentText?: string;
+  audioUrl?: string;
+  imageUrl?: string;
+  transcript?: string;
+  styleAnalysis?: object;
+}
+
+interface ChatResponse {
+  conversation: Conversation;
+  userMessage: Message;
+  assistantMessage: Message;
+}
+
+class ChatService {
+  /**
+   * Main chat method: Send user message and get AI response
+   * Flow:
+   * 1. Create/get conversation
+   * 2. Save user message
+   * 3. Generate LaTeX from AI
+   * 4. Save assistant message with LaTeX
+   * 5. Return both messages + conversation
+   */
+  async sendMessage(params: SendMessageParams): Promise<ChatResponse> {
+    const {
+      userId,
+      conversationId,
+      messageType,
+      contentText,
+      audioUrl,
+      imageUrl,
+      transcript,
+      styleAnalysis,
+    } = params;
+
+    // 1. Get or create conversation
+    let conversation: Conversation;
+    if (conversationId) {
+      const existingConv = await conversationRepository.findByIdLite(conversationId);
+      if (!existingConv || existingConv.userId !== userId) {
+        throw new Error('Conversation not found or unauthorized');
+      }
+      conversation = existingConv;
+    } else {
+      // Create new conversation
+      const title = contentText 
+        ? (contentText.substring(0, 50) + (contentText.length > 50 ? '...' : ''))
+        : 'New Conversation';
+      conversation = await conversationService.createConversation(userId, title);
+    }
+
+    // 2. Save user message
+    const userMessage = await messageRepository.create({
+      conversationId: conversation.id,
+      role: MessageRole.USER,
+      messageType,
+      contentText,
+      audioUrl,
+      imageUrl,
+      transcript,
+      styleAnalysis,
+    });
+
+    // 3. Determine prompt for AI
+    let prompt = '';
+    if (messageType === MessageType.TEXT && contentText) {
+      prompt = contentText;
+    } else if (messageType === MessageType.AUDIO && transcript) {
+      prompt = transcript;
+    } else if (messageType === MessageType.IMAGE && styleAnalysis) {
+      // Combine content with style analysis
+      const stylePrompt = this.buildStylePrompt(styleAnalysis);
+      prompt = contentText 
+        ? `${contentText}\n\nStyle requirements: ${stylePrompt}`
+        : `Create a presentation with this style: ${stylePrompt}`;
+    }
+
+    if (!prompt) {
+      throw new Error('Unable to generate prompt from message');
+    }
+
+    // 4. Generate LaTeX from AI
+    console.log('[ChatService] Generating LaTeX for prompt:', prompt.substring(0, 100));
+    const latexData = await aiService.generateLatexContent(prompt);
+
+    // 5. Save assistant message with LaTeX
+    const assistantMessage = await messageRepository.create({
+      conversationId: conversation.id,
+      role: MessageRole.ASSISTANT,
+      messageType: MessageType.TEXT,
+      contentText: latexData.latex_code,
+      slideCount: this.countSlides(latexData.latex_code),
+    });
+
+    // 6. Update conversation title if it's the first message
+    if (!conversationId) {
+      await conversationService.autoGenerateTitle(conversation.id, prompt);
+    }
+
+    return {
+      conversation,
+      userMessage,
+      assistantMessage,
+    };
+  }
+
+  /**
+   * Build style prompt from styleAnalysis object
+   */
+  private buildStylePrompt(styleAnalysis: any): string {
+    const parts: string[] = [];
+    
+    if (styleAnalysis.colorScheme) {
+      parts.push(`Color scheme: ${styleAnalysis.colorScheme}`);
+    }
+    if (styleAnalysis.layoutType) {
+      parts.push(`Layout: ${styleAnalysis.layoutType}`);
+    }
+    if (styleAnalysis.colors && Array.isArray(styleAnalysis.colors)) {
+      parts.push(`Colors: ${styleAnalysis.colors.join(', ')}`);
+    }
+    if (styleAnalysis.traits && Array.isArray(styleAnalysis.traits)) {
+      const traitLabels = styleAnalysis.traits.map((t: any) => t.label || t).join(', ');
+      parts.push(`Style traits: ${traitLabels}`);
+    }
+
+    return parts.join('. ');
+  }
+
+  /**
+   * Count number of slides in LaTeX code
+   */
+  private countSlides(latexCode: string): number {
+    const frameMatches = latexCode.match(/\\begin\{frame\}/g);
+    return frameMatches ? frameMatches.length : 0;
+  }
+
+  /**
+   * Get conversation messages
+   */
+  async getConversationMessages(conversationId: string, userId: string): Promise<Message[]> {
+    // Verify ownership
+    const conversation = await conversationRepository.findByIdLite(conversationId);
+    if (!conversation || conversation.userId !== userId) {
+      throw new Error('Conversation not found or unauthorized');
+    }
+
+    return await messageRepository.findByConversationId(conversationId);
+  }
+}
+
+export default new ChatService();
+
