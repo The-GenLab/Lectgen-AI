@@ -7,6 +7,7 @@ import ResetPassword from './pages/Auth/ResetPassword';
 import Success from './pages/Auth/Success';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Profile from './pages/Profile/Profile';
+import ChangeAvatar from './pages/Settings/ChangeAvatar';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminUsageQuota from './pages/Admin/AdminUsageQuota';
 import AdminSystemLogs from './pages/Admin/AdminSystemLogs';
@@ -24,6 +25,7 @@ function App() {
         <Route path="/login-success" element={<Success />} />
         <Route path="/" element={<ProtectedRoute> <Dashboard /> </ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute> <Profile /> </ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute> <ChangeAvatar /> </ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute> <AdminDashboard /> </ProtectedRoute>} />
         <Route path="/admin/usage" element={<ProtectedRoute> <AdminUsageQuota /> </ProtectedRoute>} />
         <Route path="/admin/logs" element={<ProtectedRoute> <AdminSystemLogs /> </ProtectedRoute>} />

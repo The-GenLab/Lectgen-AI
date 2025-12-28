@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Layout,
   Button,
@@ -47,6 +48,7 @@ const { Sider, Header, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [input, setInput] = useState('');
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
@@ -165,26 +167,21 @@ export default function Dashboard() {
     return 'default';
   };
 
-  // Calculate daily limit (approximate: monthly / 30)
-  const getDailyLimit = () => {
-    if (!currentUser?.maxSlidesPerMonth) return 5;
-    // Calculate approximate daily limit (monthly / 30, rounded up)
-    return Math.ceil(currentUser.maxSlidesPerMonth / 30);
+  // Get monthly usage and limit
+  const getMonthlyUsage = () => {
+    return currentUser?.slidesGenerated || 0;
   };
 
-  // Calculate daily usage (approximate: monthly generated / 30)
-  const getDailyUsage = () => {
-    if (!currentUser?.slidesGenerated) return 0;
-    // Calculate approximate daily usage (monthly generated / 30, rounded down)
-    return Math.floor(currentUser.slidesGenerated / 30);
+  const getMonthlyLimit = () => {
+    return currentUser?.maxSlidesPerMonth || 5;
   };
 
   // Get usage percentage
   const getUsagePercentage = () => {
-    const dailyLimit = getDailyLimit();
-    const dailyUsage = getDailyUsage();
-    if (dailyLimit === 0) return 0;
-    return Math.min(Math.round((dailyUsage / dailyLimit) * 100), 100);
+    const limit = getMonthlyLimit();
+    const usage = getMonthlyUsage();
+    if (limit === 0) return 0;
+    return Math.min(Math.round((usage / limit) * 100), 100);
   };
 
   // Handle logout
@@ -222,6 +219,24 @@ export default function Dashboard() {
     setConversationTitle('New Conversation');
     setMessages([]);
     setInput('');
+  };
+
+  // Get title for assistant message (from corresponding user message or conversation title)
+  const getPresentationTitle = (msgIndex: number): string => {
+    // Find the corresponding user message (should be the previous message)
+    if (msgIndex > 0) {
+      const userMsg = messages[msgIndex - 1];
+      if (userMsg && userMsg.role === 'USER' && userMsg.contentText) {
+        // Use user prompt as title, truncate if too long
+        const prompt = userMsg.contentText.trim();
+        if (prompt.length <= 50) {
+          return prompt;
+        }
+        return prompt.substring(0, 50) + '...';
+      }
+    }
+    // Fallback to conversation title
+    return conversationTitle;
   };
 
   const handleSend = async () => {
@@ -445,9 +460,9 @@ export default function Dashboard() {
             {/* Usage */}
             {currentUser && (
               <div className={styles.usageSection}>
-                <Text className={styles.usageLabel}>Daily Limit</Text>
+                <Text className={styles.usageLabel}>Monthly Limit</Text>
                 <Text className={styles.usageText}>
-                  {getDailyUsage()}/{getDailyLimit()} slides generated
+                  {getMonthlyUsage()}/{getMonthlyLimit()} slides generated
                 </Text>
                 <Progress
                   percent={getUsagePercentage()}
@@ -460,7 +475,11 @@ export default function Dashboard() {
             <Divider style={{ margin: '12px 0' }} />
 
             {/* User Card */}
-            <div className={styles.userCard}>
+            <div 
+              className={styles.userCard}
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigate('/settings')}
+            >
               {currentUser?.avatarUrl && getAvatarUrl(currentUser.avatarUrl) ? (
                 <Avatar
                   size={40}
@@ -524,7 +543,7 @@ export default function Dashboard() {
           <div className={styles.messagesContainer}>
             {/* Render dynamic messages */}
             {messages.length > 0 ? (
-              messages.map((msg) => (
+              messages.map((msg, index) => (
                 <div key={msg.id} className={styles.messageRow}>
                   {msg.role === 'USER' ? (
                     // User message
@@ -569,19 +588,26 @@ export default function Dashboard() {
                             <div className={styles.cardDetails}>
                               <div className={styles.cardHeader}>
                                 <Title level={5} className={styles.cardTitle}>
-                                  Bài thuyết trình LaTeX
+                                  {getPresentationTitle(index)}
                                 </Title>
                                 <Tag color="success" className={styles.readyTag}>READY</Tag>
                               </div>
 
                               <Paragraph className={styles.cardDescription}>
-                                {msg.slideCount} slides • LaTeX Beamer presentation
+                                {msg.slideCount || 0} slides • LaTeX Beamer presentation
                               </Paragraph>
 
                               <div className={styles.cardMeta}>
                                 <Space size={16}>
-                                  <Text type="secondary">📊 {msg.slideCount} Slides</Text>
-                                  <Text type="secondary">⏱ {new Date(msg.createdAt).toLocaleTimeString()}</Text>
+                                  <Text type="secondary">📊 {msg.slideCount || 0} Slides</Text>
+                                  <Text type="secondary">
+                                    ⏱ {new Date(msg.createdAt).toLocaleTimeString('en-US', { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit', 
+                                      second: '2-digit',
+                                      hour12: false 
+                                    })}
+                                  </Text>
                                   <Text type="secondary">📝 {msg.contentText?.length || 0} chars</Text>
                                 </Space>
                               </div>
