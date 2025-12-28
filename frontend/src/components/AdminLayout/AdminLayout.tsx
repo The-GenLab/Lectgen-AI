@@ -9,6 +9,7 @@ import {
     LogOut,
     Crown
 } from 'lucide-react';
+import { getAvatarUrl } from '../../utils/file';
 import styles from './AdminLayout.module.css';
 
 interface AdminLayoutProps {
@@ -104,9 +105,20 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 {/* User Info */}
                 <div className={styles.userSection}>
                     <div className={styles.userInfo}>
-                        <div className={styles.userAvatar}>
-                            {user.name?.[0]?.toUpperCase() || 'A'}
-                        </div>
+                        {user.avatarUrl && getAvatarUrl(user.avatarUrl) ? (
+                            <div 
+                                className={styles.userAvatar}
+                                style={{ 
+                                    backgroundImage: `url(${getAvatarUrl(user.avatarUrl)})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center'
+                                }}
+                            />
+                        ) : (
+                            <div className={styles.userAvatar}>
+                                {user.name?.[0]?.toUpperCase() || 'A'}
+                            </div>
+                        )}
                         <div className={styles.userDetails}>
                             <div className={styles.userName}>{user.name || 'Admin'}</div>
                             <div className={styles.userRole}>Super Admin</div>

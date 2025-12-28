@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/AdminLayout';
 import { getGlobalStats, getUsageLogs, getAllUsers } from '../../api/admin';
+import { getAvatarUrl } from '../../utils/file';
 import type { GlobalStats, UsageLog, UserWithStats } from '../../api/admin';
 
 const AdminUsageQuota = () => {
@@ -265,7 +266,7 @@ const AdminUsageQuota = () => {
                         <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark shadow-sm hover:shadow-md transition-shadow">
                             <div className="flex justify-between items-start mb-2">
                                 <p className="text-text-sub-light dark:text-text-sub-dark text-sm font-medium">Total Tokens</p>
-                                <span className="material-symbols-outlined text-purple-500 bg-purple-500/10 p-1.5 rounded-lg text-[20px]">token</span>
+                                <span className="material-symbols-outlined text-blue-500 bg-blue-500/10 p-1.5 rounded-lg text-[20px]">token</span>
                             </div>
                             <p className="text-2xl font-bold text-text-main-light dark:text-white">{formatTokens(stats?.totalTokens)}</p>
                             <div className="flex items-center gap-1 mt-1">
@@ -519,8 +520,9 @@ const AdminUsageQuota = () => {
                                             .map((log) => {
                                                 const user = usersMap[log.userId];
                                                 const name = user?.name || log.userId;
-                                                const avatar = user?.avatarUrl || undefined;
+                                                const avatarUrl = user?.avatarUrl ? getAvatarUrl(user.avatarUrl) : null;
                                                 const role = user?.role || '—';
+                                                const userInitials = name ? (name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()) : 'U';
 
                                                 const formattedDate = new Date(log.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
@@ -534,7 +536,16 @@ const AdminUsageQuota = () => {
                                                     <tr key={log.id} className="bg-surface-light dark:bg-surface-dark hover:bg-background-light dark:hover:bg-slate-800/30 transition-colors">
                                                         <td className="px-6 py-4 font-medium text-text-main-light dark:text-white">
                                                             <div className="flex items-center gap-3">
-                                                                <div className="size-8 rounded-full bg-slate-200 bg-cover" style={avatar ? { backgroundImage: `url(${avatar})` } : {}} />
+                                                                {avatarUrl ? (
+                                                                    <div 
+                                                                        className="size-8 rounded-full bg-slate-200 bg-cover bg-center" 
+                                                                        style={{ backgroundImage: `url(${avatarUrl})` }}
+                                                                    />
+                                                                ) : (
+                                                                    <div className="size-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                                                                        {userInitials}
+                                                                    </div>
+                                                                )}
                                                                 <span>{name}</span>
                                                             </div>
                                                         </td>

@@ -32,9 +32,9 @@ function App() {
         <Route path="/settings/upgrade" element={<ProtectedRoute> <UpgradeToVIP /> </ProtectedRoute>} />
         <Route path="/checkout" element={<ProtectedRoute> <Checkout /> </ProtectedRoute>} />
         <Route path="/payment/success" element={<ProtectedRoute> <PaymentSuccess /> </ProtectedRoute>} />
-        <Route path="/admin" element={<ProtectedRoute> <AdminDashboard /> </ProtectedRoute>} />
-        <Route path="/admin/usage" element={<ProtectedRoute> <AdminUsageQuota /> </ProtectedRoute>} />
-        <Route path="/admin/logs" element={<ProtectedRoute> <AdminSystemLogs /> </ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute requireAdmin> <AdminDashboard /> </ProtectedRoute>} />
+        <Route path="/admin/usage" element={<ProtectedRoute requireAdmin> <AdminUsageQuota /> </ProtectedRoute>} />
+        <Route path="/admin/logs" element={<ProtectedRoute requireAdmin> <AdminSystemLogs /> </ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

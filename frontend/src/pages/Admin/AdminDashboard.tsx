@@ -4,7 +4,8 @@ import { Spin, DatePicker, Button } from 'antd';
 import { DollarOutlined, UserOutlined, CrownOutlined, ThunderboltOutlined, ClockCircleOutlined, WarningOutlined } from '@ant-design/icons';
 import AdminLayout from '../../components/AdminLayout';
 import { getGlobalStats, getUsageLogs, getAllUsers } from '../../api/admin';
-import type { GlobalStats } from '../../api/admin';
+import { getAvatarUrl } from '../../utils/file';
+import type { GlobalStats, UserWithStats } from '../../api/admin';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import type { UsageLog } from '../../api/admin';
 
@@ -18,7 +19,7 @@ export default function AdminDashboard() {
     const [roleSeries, setRoleSeries] = useState<any[]>([]);
     const [recentLogs, setRecentLogs] = useState<UsageLog[]>([]);
     const [recentLoading, setRecentLoading] = useState(false);
-    const [userMap, setUserMap] = useState<Record<string, string>>({});
+    const [userMap, setUserMap] = useState<Record<string, UserWithStats>>({});
     const navigate = useNavigate();
 
 
@@ -121,8 +122,10 @@ export default function AdminDashboard() {
         try {
             const usersResp = await getAllUsers({ limit: 10000 });
             const users = usersResp?.users || [];
-            const map: Record<string, string> = {};
-            users.forEach((u: any) => { map[u.id] = u.name || u.email; });
+            const map: Record<string, UserWithStats> = {};
+            users.forEach((u: UserWithStats) => {
+                if (u?.id) map[u.id] = u;
+            });
             setUserMap(map);
         } catch (err) {
             console.error('Failed to load users map', err);
@@ -239,7 +242,7 @@ export default function AdminDashboard() {
 
                         <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-3">
                             <div className="flex items-center justify-between">
-                                <div className="p-2 bg-purple-50 rounded-lg text-purple-600"><CrownOutlined /></div>
+                                <div className="p-2 bg-blue-50 rounded-lg text-blue-600"><CrownOutlined /></div>
                                 {renderChangeBadge(stats?.comparison?.vipRetention)}
                             </div>
                             <div>
@@ -443,14 +446,29 @@ export default function AdminDashboard() {
                                             <td colSpan={5} className="px-6 py-8 text-center text-sm text-slate-400">Loading recent logs...</td>
                                         </tr>
                                     ) : recentLogs.length ? (
-                                        recentLogs.map((r: any) => (
-                                            <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">{(userMap[r.userId] || 'U').slice(0, 2).toUpperCase()}</div>
-                                                        <span className="font-medium text-slate-900 dark:text-white">{userMap[r.userId] || r.userId}</span>
-                                                    </div>
-                                                </td>
+                                        recentLogs.map((r: any) => {
+                                            const user = userMap[r.userId];
+                                            const userName = user?.name || user?.email || r.userId;
+                                            const avatarUrl = user?.avatarUrl ? getAvatarUrl(user.avatarUrl) : null;
+                                            const userInitials = userName ? (userName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()) : 'U';
+                                            
+                                            return (
+                                                <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            {avatarUrl ? (
+                                                                <div 
+                                                                    className="w-8 h-8 rounded-full bg-slate-200 bg-cover bg-center" 
+                                                                    style={{ backgroundImage: `url(${avatarUrl})` }}
+                                                                />
+                                                            ) : (
+                                                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                                                                    {userInitials}
+                                                                </div>
+                                                            )}
+                                                            <span className="font-medium text-slate-900 dark:text-white">{userName}</span>
+                                                        </div>
+                                                    </td>
                                                 <td className="px-6 py-4 text-slate-600 dark:text-slate-300 max-w-xs truncate">{r.metadata?.topic || r.metadata?.prompt || r.actionType}</td>
                                                 <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{r.metadata?.slideCount ? `${r.metadata.slideCount} Slides` : (r.metadata?.slides ? `${r.metadata.slides} Slides` : '—')}</td>
                                                 <td className="px-6 py-4">
@@ -467,7 +485,8 @@ export default function AdminDashboard() {
                                                     return `${Math.floor(s / 86400)} days ago`;
                                                 })(r.createdAt)}</td>
                                             </tr>
-                                        ))
+                                            );
+                                        })
                                     ) : (
                                         <tr>
                                             <td colSpan={5} className="px-6 py-8 text-center text-sm text-slate-400">No recent generation jobs</td>
