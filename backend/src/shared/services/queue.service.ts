@@ -29,6 +29,7 @@ class QueueService {
     userRole: UserRole;
     execute: () => Promise<T>;
   }): Promise<T> {
+    const { userId, userRole, execute } = params;
     return new Promise<T>(async (resolve, reject) => {
       try {
         // Get VIP config to determine priority
