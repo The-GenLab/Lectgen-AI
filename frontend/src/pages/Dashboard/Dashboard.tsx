@@ -755,213 +755,269 @@ export default function Dashboard() {
                 </div>
               ))
             ) : (
-              // Show placeholder when no messages
-              <>
-                {/* User Message */}
-                <div className={styles.messageRow}>
-                  <div className={styles.userMessage}>
-                    <div className={styles.messageBubble}>
-                      <Text className={styles.messageText}>
-                        I need a presentation for our 2024 Marketing Strategy.
-                        It should cover our Q1 achievements, Q2 goals, and the
-                        new social media campaign. Keep it professional and
-                        clean. About 10 slides.
-                      </Text>
-                      <Text className={styles.timestamp}>10:42 AM</Text>
+              // Show greeting when no messages OR loading state
+              <div className={styles.emptyState}>
+                {isLoading ? (
+                  // Show loading spinner when waiting for response
+                  <div className={styles.loadingStateCenter}>
+                    <div className={styles.spinningLogo}>
+                      <LogoIcon />
                     </div>
+                    <Text className={styles.loadingText}>
+                      Generating your presentation...
+                    </Text>
                   </div>
-                </div>
+                ) : (
+                  // Show greeting when no messages
+                  <div className={styles.greetingContainer}>
+                    <div className={styles.logoIcon}>
+                      <LogoIcon />
+                    </div>
+                    <Title level={2} className={styles.greetingTitle}>
+                      Hello {currentUser?.name || "there"}!
+                    </Title>
+                    <Text className={styles.greetingSubtitle}>
+                      How can I help you create amazing presentations today?
+                    </Text>
+                  </div>
+                )}
 
-                {/* AI Response */}
-                <div className={styles.messageRow}>
-                  <div className={styles.aiMessage}>
-                    <Avatar
-                      icon={<RobotOutlined />}
-                      className={styles.aiAvatar}
-                      size={32}
-                    />
-                    <div>
-                      <div className={styles.aiTextBubble}>
-                        <Text>
-                          I've generated a draft for your 2024 Marketing
-                          Strategy. It includes sections for Q1 review, Q2
-                          objectives, and a detailed breakdown of the social
-                          media channels.
-                        </Text>
-                      </div>
+                {/* Centered Input when no messages */}
+                <div className={styles.centeredInputArea}>
+                  {(() => {
+                    const enabledMethods = getEnabledInputMethods();
+                    const tabItems = [];
 
-                      {/* Presentation Card */}
-                      <Card className={styles.presentationCard}>
-                        <div className={styles.cardContent}>
-                          {/* Thumbnail */}
-                          <div className={styles.thumbnail}>
-                            <div className={styles.thumbnailPlaceholder}>
-                              <FileTextOutlined
-                                style={{ fontSize: 48, color: "#1677FF" }}
+                    // Text tab
+                    if (enabledMethods.text) {
+                      tabItems.push({
+                        key: "text",
+                        label: (
+                          <span>
+                            <FileTextOutlined /> Text
+                          </span>
+                        ),
+                        children: (
+                          <>
+                            {/* Suggestion Chips */}
+                            <div className={styles.suggestions}>
+                              {suggestions.map((item, index) => (
+                                <Button
+                                  key={index}
+                                  icon={item.icon}
+                                  className={styles.suggestionChip}
+                                >
+                                  {item.label}
+                                </Button>
+                              ))}
+                            </div>
+
+                            {/* Input Bar */}
+                            <div className={styles.inputBar}>
+                              <Input
+                                size="large"
+                                placeholder="Describe your topic (e.g., 'History of Jazz Music with 5 slides')..."
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onPressEnter={handleSend}
+                                disabled={isLoading}
+                                className={styles.input}
+                                suffix={
+                                  <Button
+                                    type="primary"
+                                    shape="circle"
+                                    icon={<SendOutlined />}
+                                    onClick={handleSend}
+                                    disabled={!input.trim() || isLoading}
+                                    loading={isLoading}
+                                    className={styles.sendBtn}
+                                  />
+                                }
                               />
                             </div>
-                            <div className={styles.slideOverlay}>
-                              Cover Slide
-                            </div>
-                          </div>
 
-                          {/* Details */}
-                          <div className={styles.cardDetails}>
-                            <div className={styles.cardHeader}>
-                              <Title level={5} className={styles.cardTitle}>
-                                Marketing Strategy 2024
-                              </Title>
-                              <Tag color="success" className={styles.readyTag}>
-                                READY
-                              </Tag>
-                            </div>
+                            <Text type="secondary" className={styles.disclaimer}>
+                              AI can make mistakes. Please review generated
+                              slides before presenting.
+                            </Text>
+                          </>
+                        ),
+                      });
+                    }
 
-                            <Paragraph className={styles.cardDescription}>
-                              Comprehensive deck covering Q1 objectives, Q2
-                              OKRs, and Social Media tactical roadmap.
-                            </Paragraph>
+                    // Audio tab
+                    if (enabledMethods.audio) {
+                      tabItems.push({
+                        key: "audio",
+                        label: (
+                          <span>
+                            <AudioOutlined /> Audio Input
+                          </span>
+                        ),
+                        children: (
+                          <AudioRecorder
+                            onTranscriptReady={handleTranscriptReady}
+                          />
+                        ),
+                      });
+                    }
 
-                            <div className={styles.cardMeta}>
-                              <Space size={16}>
-                                <Text type="secondary">📊 10 Slides</Text>
-                                <Text type="secondary">⏱ ~30s gen time</Text>
-                                <Text type="secondary">📁 2.4 MB</Text>
-                              </Space>
-                            </div>
+                    // Image tab
+                    if (enabledMethods.image) {
+                      tabItems.push({
+                        key: "image",
+                        label: (
+                          <span>
+                            <PictureOutlined /> Image / Template Input
+                          </span>
+                        ),
+                        children: (
+                          <TemplateAnalyzer
+                            onConfirm={handleImageUploadConfirm}
+                          />
+                        ),
+                      });
+                    }
 
-                            <div className={styles.cardActions}>
-                              <Button
-                                type="primary"
-                                icon={<DownloadOutlined />}
-                                size="large"
-                                className={styles.downloadBtn}
-                              >
-                                Download PDF
-                              </Button>
-                              <Button icon={<ReloadOutlined />} size="large" />
-                              <Button icon={<EditOutlined />} size="large" />
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
+                    const enabledTabKeys = tabItems.map((item) => item.key);
+                    const effectiveActiveTab = enabledTabKeys.includes(
+                      activeTab,
+                    )
+                      ? activeTab
+                      : enabledTabKeys[0] || "text";
 
-                      <Text className={styles.timestamp}>10:43 AM</Text>
-                    </div>
-                  </div>
+                    return (
+                      <Tabs
+                        activeKey={effectiveActiveTab}
+                        onChange={setActiveTab}
+                        centered
+                        items={tabItems}
+                      />
+                    );
+                  })()}
                 </div>
-              </>
+              </div>
             )}
           </div>
 
-          {/* Input Area */}
-          <div className={styles.inputArea}>
-            {(() => {
-              const enabledMethods = getEnabledInputMethods();
-              const tabItems = [];
+          {/* Input Area - Show at bottom when no messages OR loading */}
+          {(messages.length === 0 || isLoading) && (
+            <div style={{ display: 'none' }}>
+              {/* Hidden - input is shown in center */}
+            </div>
+          )}
 
-              // Text tab
-              if (enabledMethods.text) {
-                tabItems.push({
-                  key: "text",
-                  label: (
-                    <span>
-                      <FileTextOutlined /> Text
-                    </span>
-                  ),
-                  children: (
-                    <>
-                      {/* Suggestion Chips */}
-                      <div className={styles.suggestions}>
-                        {suggestions.map((item, index) => (
-                          <Button
-                            key={index}
-                            icon={item.icon}
-                            className={styles.suggestionChip}
-                          >
-                            {item.label}
-                          </Button>
-                        ))}
-                      </div>
+          {/* Input Area - Show at bottom when there are messages (not loading) */}
+          {messages.length > 0 && !isLoading && (
+            <div className={styles.inputArea}>
+              {(() => {
+                const enabledMethods = getEnabledInputMethods();
+                const tabItems = [];
 
-                      {/* Input Bar */}
-                      <div className={styles.inputBar}>
-                        <Input
-                          size="large"
-                          placeholder="Describe your topic (e.g., 'History of Jazz Music with 5 slides')..."
-                          value={input}
-                          onChange={(e) => setInput(e.target.value)}
-                          onPressEnter={handleSend}
-                          disabled={isLoading}
-                          className={styles.input}
-                          suffix={
+                // Text tab
+                if (enabledMethods.text) {
+                  tabItems.push({
+                    key: "text",
+                    label: (
+                      <span>
+                        <FileTextOutlined /> Text
+                      </span>
+                    ),
+                    children: (
+                      <>
+                        {/* Suggestion Chips */}
+                        <div className={styles.suggestions}>
+                          {suggestions.map((item, index) => (
                             <Button
-                              type="primary"
-                              shape="circle"
-                              icon={<SendOutlined />}
-                              onClick={handleSend}
-                              disabled={!input.trim() || isLoading}
-                              loading={isLoading}
-                              className={styles.sendBtn}
-                            />
-                          }
-                        />
-                      </div>
+                              key={index}
+                              icon={item.icon}
+                              className={styles.suggestionChip}
+                            >
+                              {item.label}
+                            </Button>
+                          ))}
+                        </div>
 
-                      <Text type="secondary" className={styles.disclaimer}>
-                        AI can make mistakes. Please review generated slides
-                        before presenting.
-                      </Text>
-                    </>
-                  ),
-                });
-              }
+                        {/* Input Bar */}
+                        <div className={styles.inputBar}>
+                          <Input
+                            size="large"
+                            placeholder="Describe your topic (e.g., 'History of Jazz Music with 5 slides')..."
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onPressEnter={handleSend}
+                            disabled={isLoading}
+                            className={styles.input}
+                            suffix={
+                              <Button
+                                type="primary"
+                                shape="circle"
+                                icon={<SendOutlined />}
+                                onClick={handleSend}
+                                disabled={!input.trim() || isLoading}
+                                loading={isLoading}
+                                className={styles.sendBtn}
+                              />
+                            }
+                          />
+                        </div>
 
-              // Audio tab
-              if (enabledMethods.audio) {
-                tabItems.push({
-                  key: "audio",
-                  label: (
-                    <span>
-                      <AudioOutlined /> Audio Input
-                    </span>
-                  ),
-                  children: (
-                    <AudioRecorder onTranscriptReady={handleTranscriptReady} />
-                  ),
-                });
-              }
+                        <Text type="secondary" className={styles.disclaimer}>
+                          AI can make mistakes. Please review generated slides
+                          before presenting.
+                        </Text>
+                      </>
+                    ),
+                  });
+                }
 
-              // Image tab
-              if (enabledMethods.image) {
-                tabItems.push({
-                  key: "image",
-                  label: (
-                    <span>
-                      <PictureOutlined /> Image / Template Input
-                    </span>
-                  ),
-                  children: (
-                    <TemplateAnalyzer onConfirm={handleImageUploadConfirm} />
-                  ),
-                });
-              }
+                // Audio tab
+                if (enabledMethods.audio) {
+                  tabItems.push({
+                    key: "audio",
+                    label: (
+                      <span>
+                        <AudioOutlined /> Audio Input
+                      </span>
+                    ),
+                    children: (
+                      <AudioRecorder onTranscriptReady={handleTranscriptReady} />
+                    ),
+                  });
+                }
 
-              // If current activeTab is disabled, switch to first available tab
-              const enabledTabKeys = tabItems.map((item) => item.key);
-              const effectiveActiveTab = enabledTabKeys.includes(activeTab)
-                ? activeTab
-                : enabledTabKeys[0] || "text";
+                // Image tab
+                if (enabledMethods.image) {
+                  tabItems.push({
+                    key: "image",
+                    label: (
+                      <span>
+                        <PictureOutlined /> Image / Template Input
+                      </span>
+                    ),
+                    children: (
+                      <TemplateAnalyzer onConfirm={handleImageUploadConfirm} />
+                    ),
+                  });
+                }
 
-              return (
-                <Tabs
-                  activeKey={effectiveActiveTab}
-                  onChange={setActiveTab}
-                  centered
-                  items={tabItems}
-                />
-              );
-            })()}
-          </div>
+                // If current activeTab is disabled, switch to first available tab
+                const enabledTabKeys = tabItems.map((item) => item.key);
+                const effectiveActiveTab = enabledTabKeys.includes(activeTab)
+                  ? activeTab
+                  : enabledTabKeys[0] || "text";
+
+                return (
+                  <Tabs
+                    activeKey={effectiveActiveTab}
+                    onChange={setActiveTab}
+                    centered
+                    items={tabItems}
+                  />
+                );
+              })()}
+            </div>
+          )}
         </Content>
       </Layout>
     </Layout>
