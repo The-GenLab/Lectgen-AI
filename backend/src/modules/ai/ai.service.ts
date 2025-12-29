@@ -404,6 +404,8 @@ class AIService {
 \\usepackage{xcolor}
 \\usepackage[utf8]{inputenc}
 \\usepackage{listings}
+\\usepackage[T5]{fontenc}
+\\usepackage[vietnamese]{babel}
 
 \\lstset{
   basicstyle=\\ttfamily\\small,
