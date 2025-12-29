@@ -75,10 +75,10 @@ const PaymentSuccess: React.FC = () => {
                 </div>
               </div>
               <h1 className="text-slate-900 dark:text-white tracking-tight text-3xl font-bold leading-tight mb-2">
-                Thanh toán thành công!
+                Payment Successful!
               </h1>
               <p className="text-slate-500 dark:text-slate-400 text-base font-normal leading-relaxed max-w-sm">
-                Chào mừng bạn đến với gói VIP. Tài khoản của bạn đã được nâng cấp và sẵn sàng sử dụng.
+                Welcome to VIP plan. Your account has been upgraded and is ready to use.
               </p>
             </div>
 
@@ -86,7 +86,7 @@ const PaymentSuccess: React.FC = () => {
             <div className="px-6 pb-6">
               <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-5 border border-slate-100 dark:border-slate-700/50">
                 <div className="flex justify-between items-center py-2 border-b border-dashed border-slate-200 dark:border-slate-700 mb-2">
-                  <span className="text-slate-500 dark:text-slate-400 text-sm">Mã đơn hàng</span>
+                  <span className="text-slate-500 dark:text-slate-400 text-sm">Order ID</span>
                   <span className="text-slate-900 dark:text-slate-200 text-sm font-medium font-mono">{orderId}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">

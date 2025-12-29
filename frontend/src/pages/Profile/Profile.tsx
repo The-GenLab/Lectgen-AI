@@ -32,13 +32,13 @@ const Profile: React.FC = () => {
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        setError('Chỉ chấp nhận file ảnh');
+        setError('Only image files are accepted');
         return;
       }
       
       // Validate file size (5MB)
       if (file.size > 5 * 1024 * 1024) {
-        setError('Kích thước ảnh không được vượt quá 5MB');
+        setError('Image size must not exceed 5MB');
         return;
       }
 
@@ -55,7 +55,7 @@ const Profile: React.FC = () => {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      setError('Tên hiển thị không được để trống');
+      setError('Display name cannot be empty');
       return;
     }
 
@@ -85,17 +85,17 @@ const Profile: React.FC = () => {
         };
         sessionStorage.setItem('user', JSON.stringify(basicUserInfo));
         
-        setSuccessMessage('Đã lưu thay đổi');
+        setSuccessMessage('Changes saved');
         
         // Redirect back to dashboard after 1 second
         setTimeout(() => {
           navigate('/');
         }, 1000);
       } else {
-        setError(response.message || 'Có lỗi xảy ra');
+        setError(response.message || 'An error occurred');
       }
     } catch (err: any) {
-      setError(err.message || 'Không thể cập nhật hồ sơ');
+      setError(err.message || 'Cannot update profile');
     } finally {
       setIsLoading(false);
     }
@@ -169,7 +169,7 @@ const Profile: React.FC = () => {
         </div>
 
         <p className={styles.helperText}>
-          Hồ sơ của bạn giúp người khác nhận ra bạn. Tên và tên người dùng của bạn cũng được sử dụng trong ứng dụng Sora.
+          Your profile helps others recognize you. Your name and username are also used in the Sora application.
         </p>
 
         {error && <div className={styles.error}>{error}</div>}

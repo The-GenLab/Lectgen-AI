@@ -41,12 +41,12 @@ export function TemplateAnalyzer({ onConfirm }: TemplateAnalyzerProps) {
         const file = e.target.files?.[0];
         if (file) {
             if (!file.type.startsWith('image/')) {
-                message.error('Vui lòng chọn file ảnh!');
+                message.error('Please select an image file!');
                 return;
             }
 
             if (file.size > 10 * 1024 * 1024) {
-                message.error('Kích thước file không được vượt quá 10MB!');
+                message.error('File size must not exceed 10MB!');
                 return;
             }
 
@@ -68,11 +68,11 @@ export function TemplateAnalyzer({ onConfirm }: TemplateAnalyzerProps) {
             setDetectedTraits(result.traits);
             setAnalysisResult(result); // Store full analysis result
             setIsAnalyzed(true);
-            message.success('Phân tích style hoàn tất!');
+            message.success('Style analysis completed!');
         } catch (error: any) {
             console.error('Analysis error:', error);
             console.error('Error details:', error.response?.data);
-            message.error(error.response?.data?.message || 'Không thể phân tích ảnh');
+            message.error(error.response?.data?.message || 'Cannot analyze image');
             // Fallback to mock data
             console.log('Using fallback mock data');
             setDetectedTraits([
@@ -100,11 +100,11 @@ export function TemplateAnalyzer({ onConfirm }: TemplateAnalyzerProps) {
 
     const handleConfirm = () => {
         if (!uploadedFile) {
-            message.warning('Vui lòng upload ảnh template!');
+            message.warning('Please upload a template image!');
             return;
         }
         if (!topic.trim()) {
-            message.warning('Vui lòng nhập chủ đề bài thuyết trình!');
+            message.warning('Please enter presentation topic!');
             return;
         }
 
