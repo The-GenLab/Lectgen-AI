@@ -22,7 +22,7 @@
 
 Transform your ideas into professional presentations using text, voice, or template images.
 
-[Features](#features) • [Architecture](#architecture) • [Tech Stack](#tech-stack) • [Getting Started](#getting-started) • [API Documentation](#api-documentation)
+[Features](#key-features) • [Architecture](#architecture) • [Tech Stack](#tech-stack) • [Getting Started](#getting-started) • [API Documentation](#api-documentation)
 
 </div>
 
