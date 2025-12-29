@@ -1,237 +1,393 @@
-## 🎯 **TỔNG QUAN DỰ ÁN**
+# Lectgen AI
 
-### **Concept**
+<div align="center">
 
-Một nền tảng tạo slide bài giảng tự động bằng AI, cho phép người dùng tương tác qua **chat interface** (giống ChatGPT/Gemini) với khả năng nhập liệu đa dạng: **text, audio, và ảnh mẫu**. Hệ thống phân cấp người dùng FREE/VIP với admin dashboard quản lý toàn diện.
+<img src="docs/img/logo.png" alt="Lectgen AI Logo" width="200"/>
 
-### **Giải quyết vấn đề gì?**
+<br/>
 
-- Giảng viên/sinh viên mất nhiều thời gian làm slide
-- Người không giỏi thiết kế cần template đẹp
-- Cần tạo slide nhanh từ ý tưởng (text/voice)
+### Built with
 
-### **Timeline: 2 THÁNG với 5 Developers**
+<img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React"/>
+<img src="https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js"/>
+<img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/>
+<img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL"/>
+<img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"/>
 
----
+<br/>
 
-## 🏗️ **KIẾN TRÚC HỆ THỐNG**
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-### **1. Frontend (User App)**
+**AI-Powered Presentation Generation Platform**
 
-**Giao diện chính - ChatGPT-like Interface:**
+Transform your ideas into professional presentations using text, voice, or template images.
 
-#### **A. Chat Area (80% màn hình)**
+[Features](#features) • [Architecture](#architecture) • [Tech Stack](#tech-stack) • [Getting Started](#getting-started) • [API Documentation](#api-documentation)
 
-- Hiển thị lịch sử hội thoại (user prompt + AI response)
-- Mỗi response có:
-  - Preview slide thumbnail
-  - Nút "Download PDF"
-  - Nút "Edit Slide" (xem sau)
-  - Metadata: timestamp, số slide, file size
-
-#### **B. Input Panel (20% màn hình dưới cùng)**
-
-**3 tab input:**
-
-1. **📝 Text Tab** (default)
-   - Textbox lớn với placeholder: "Mô tả chủ đề bài giảng..."
-   - Gợi ý prompt mẫu (dropdown)
-2. **🎤 Audio Tab**
-   - Nút Record (bấm giữ để nói)
-   - Hiển thị waveform khi đang record
-   - Preview transcript trước khi generate
-3. **🖼️ Template Tab**
-   - Upload 1 ảnh slide mẫu
-   - AI phân tích và show preview: "Phát hiện style: Minimalist, màu xanh dương, bullet points..."
-   - User confirm trước khi generate
-
-#### **C. Sidebar (Trái)**
-
-- **New Chat** button
-- Lịch sử conversations (group theo ngày)
-- User profile:
-  - Avatar + tên
-  - Role badge (FREE/VIP)
-  - Usage: "3/5 slides used" (FREE) hoặc "∞ Unlimited" (VIP)
-  - Nút "Upgrade to VIP" và sau khi bấm vào đưa người dùng đến trang hỗ trợ upgrade account lên tài khoản vip
-
-#### **D. Settings Dropdown (Góc phải trên)**
-
-- Logout
-- View history
-- Account settings
-- Help/Documentation
+</div>
 
 ---
 
-### **2. Backend (API Services)**
+## Overview
 
-#### **A. Core Services**
+Lectgen AI is an intelligent presentation generation platform that leverages advanced AI models to automatically create professional slide decks. Users interact through an intuitive ChatGPT-style interface with support for multimodal inputs including text descriptions, voice recordings, and template images.
 
-1. **AI Service (Langchain + Gemini)** ( An làm )
-   - Text → Structured slide data (JSON)
-   - 2 models:
-     - FREE: `gemini-1.5-flash` (faster, basic)
-     - VIP: `gemini-2.0-flash-exp` (slower, advanced content)
-2. **Speech Service** ( Bình làm )
-   - Audio file → Text transcript
-   - Dùng Google Speech-to-Text API
-   - Support Vietnamese accent
-3. **Vision Service** ( Dũng )
-   - Image → Style analysis
-   - Extract: color scheme, layout type, font style
-   - Output: style prompt để inject vào AI
-4. **PDF Service (Puppeteer)** ( Thiện )
-   - JSON slide data → Rendered PDF
-   - 2 template levels:
-     - FREE: Basic template (simple, 1-2 colors)
-     - VIP: Premium template (gradients, icons, charts)
+### Key Features
 
-#### **B. Authentication & Authorization**
+- 🤖 **AI-Powered Generation** - Utilizes Google Gemini via LangChain for intelligent content creation
+- 🎙️ **Voice Input** - Convert speech to presentations with Whisper speech-to-text
+- 🎨 **Template Analysis** - Upload reference slides to match your desired style
+- 💬 **Conversational Interface** - ChatGPT-like experience for iterative design
+- 👥 **Multi-tier System** - FREE and VIP plans with different capabilities
+- 📊 **Admin Dashboard** - Comprehensive analytics and user management
 
-- JWT tokens (access + refresh)
-- Roles: USER (FREE), VIP, ADMIN
-- Password hashing: bcrypt
+### Problem Statement
 
-#### **C. Rate Limiting & Quota**
-
-- FREE users:
-  - Max 5 slides/month (reset đầu tháng)
-  - Only text input
-  - Basic template
-- VIP users:
-  - Unlimited slides
-  - Audio + Image input
-  - Premium templates
-  - Priority queue (generate nhanh hơn)
+- **Time-consuming** - Educators and students spend hours creating presentations
+- **Design challenges** - Not everyone has design expertise or access to quality templates
+- **Inefficient workflows** - Need rapid conversion from ideas (text/voice) to finished slides
 
 ---
 
-## 🏗️ CẤU TRÚC HỆ THỐNG
+## Architecture
 
-### Kiến trúc tổng quan
+### System Overview
 
 ```
-┌─────────────┐      ┌──────────────┐      ┌─────────────┐
-│   Frontend  │─────▶│   Backend    │─────▶│  Database   │
-│  (React)    │◀─────│  (Express)   │◀─────│ (PostgreSQL)│
-└─────────────┘      └──────────────┘      └─────────────┘
-                           │
-                           ├─▶ MinIO (File Storage)
-                           ├─▶ Gemini AI (LangChain)
-                           └─▶ Whisper (Speech-to-Text)
+┌─────────────────┐      ┌──────────────────────────────────────┐      ┌──────────────┐
+│    Frontend     │─────▶│            Backend                   │─────▶│   Database   │
+│  React + TS     │◀─────│          Node.js + TS                │◀─────│  PostgreSQL  │
+└─────────────────┘      │                                      │      └──────────────┘
+                         │  ┌────────────────────────────────┐  │
+                         │  │  LangChain → Gemini AI         │  │
+                         │  │  Generate Content Structure    │  │
+                         │  └────────────────────────────────┘  │
+                         │              ↓                       │
+                         │  ┌────────────────────────────────┐  │
+                         │  │  Backend LaTeX Builder         │  │
+                         │  │  Content → LaTeX Code          │  │
+                         │  └────────────────────────────────┘  │
+                         │              ↓                       │
+                         │  ┌────────────────────────────────┐  │
+                         │  │  LaTeX Compiler                │  │
+                         │  │  LaTeX → PDF                   │  │
+                         │  └────────────────────────────────┘  │
+                         └──────────────────────────────────────┘
+                               │
+                               ├─▶ MinIO (Storage)
+                               └─▶ Whisper (STT)
 ```
 
-### Stack công nghệ
+### Core Components
 
-- **Frontend**: React + TypeScript + Tailwind CSS + Ant Design
-- **Backend**: Node.js + Express + TypeScript + Sequelize ORM
-- **Database**: PostgreSQL
-- **Storage**: MinIO (S3-compatible)
-- **AI Services**:
-  - Google Gemini (via LangChain) - Slide generation
-  - Whisper (Local Docker) - Speech-to-text
-- **Auth**: JWT (Access + Refresh tokens in HTTP-only cookies)
+#### Frontend Architecture
 
-### Cấu trúc Backend Modules
+```
+frontend/src/
+├── pages/
+│   ├── Auth/         # Authentication pages
+│   ├── Dashboard/    # Main chat interface
+│   ├── Settings/     # User preferences
+│   ├── Payment/      # Subscription management
+│   └── Admin/        # Admin panel
+├── components/       # Reusable UI components
+├── hooks/           # Custom React hooks
+└── services/        # API integration layer
+```
+
+**Main Interface Features:**
+
+- **Chat Area** - Conversation history with slide previews and download options
+- **Input Panel** - Three modes: Text, Audio, and Template upload
+- **Sidebar** - Conversation history, user profile, and usage statistics
+- **Settings** - Account management and subscription controls
+
+#### Backend Architecture
 
 ```
 backend/src/modules/
-├── auth/          # Authentication & Authorization (JWT, login, register)
-├── user/          # User management (profile, upgrade VIP)
-├── conversation/  # Conversation CRUD
-├── chat/          # AI Chat service (text/audio/image → LaTeX)
-├── ai/            # Core AI Service (LangChain + Gemini)
-├── speech/        # Speech-to-Text (Whisper integration)
-├── template/      # Template image analysis & storage
-├── file/          # Generic file operations (MinIO)
-└── admin/         # Admin APIs (stats, logs, user management)
+├── auth/          # JWT-based authentication
+├── user/          # User profile management
+├── conversation/  # Chat session handling
+├── chat/          # Message processing
+├── ai/            # LangChain + Gemini integration (content generation)
+├── latex/         # LaTeX builder (convert content → LaTeX syntax)
+├── speech/        # Whisper STT service
+├── template/      # Image style analysis
+├── file/          # MinIO file operations
+└── admin/         # Analytics and monitoring
 ```
 
-### Cấu trúc Frontend Pages
+### Data Flow
+
+**Text to Slides:**
 
 ```
-frontend/src/pages/
-├── Auth/          # Login, Register, Forgot Password
-├── Dashboard/     # Main Chat Interface (User App)
-├── Settings/      # User settings, Avatar, Upgrade VIP
-├── Payment/       # Checkout, Payment Success
-└── Admin/         # Admin Dashboard, Users, Logs, Usage
+User Input → Chat API → LangChain + Gemini (Generate Content) →
+Backend LaTeX Builder (Content → LaTeX) → LaTeX Compiler → PDF → Storage
 ```
 
-### Database Schema (Core Models)
+**Voice to Slides:**
 
 ```
-Users
-  ├── id, email, name, avatarUrl
-  ├── passwordHash, role (FREE/VIP/ADMIN)
-  ├── slidesGenerated, maxSlidesPerMonth
-  └── subscriptionExpiresAt
-
-Sessions
-  ├── id, userId
-  ├── refreshToken
-  └── expiresAt
-
-Conversations
-  ├── id, userId
-  └── title
-
-Messages
-  ├── id, conversationId
-  ├── role (USER/ASSISTANT)
-  ├── messageType (TEXT/AUDIO/IMAGE)
-  ├── contentText (LaTeX code)
-  ├── audioUrl, imageUrl, transcript
-  ├── styleAnalysis (JSONB)
-  ├── pdfUrl, slideCount
-  └── createdAt
-
-UsageLogs
-  ├── id, userId
-  ├── actionType, status
-  ├── metadata (JSONB)
-  └── createdAt
-
-TemplateFiles
-  ├── id, userId
-  ├── fileUrl, styleAnalysis
-  └── createdAt
+Audio Upload → Whisper STT → Text → Chat API → LangChain + Gemini (Generate Content) →
+Backend LaTeX Builder → LaTeX Compiler → PDF
 ```
 
-### Flow chính
-
-**1. User tạo slide (Text Input)**
+**Template-based:**
 
 ```
-User Input → Chat API → AI Service → LaTeX → Database + MinIO
+Image Upload → Vision Analysis → Style Prompt → LangChain + Gemini (Generate Content) →
+Backend LaTeX Builder (Apply Style) → LaTeX Compiler → PDF
 ```
 
-**2. User tạo slide (Audio Input)**
+---
+
+## Tech Stack
+
+### Frontend
+
+- **Framework:** React 18 + TypeScript
+- **Styling:** Tailwind CSS + Ant Design
+- **State Management:** React Context / Redux
+- **Build Tool:** Vite / Webpack
+
+### Backend
+
+- **Runtime:** Node.js 20+
+- **Framework:** Express.js + TypeScript
+- **ORM:** Sequelize
+- **Authentication:** JWT (HTTP-only cookies)
+
+### Database & Storage
+
+- **Primary DB:** PostgreSQL
+- **File Storage:** MinIO (S3-compatible)
+- **Session Store:** Redis (optional)
+
+### AI & ML Services
+
+- **AI Framework:** LangChain
+- **LLM Model:** Google Gemini API (gemini-1.5-flash, gemini-2.0-flash-exp)
+  - Role: Generate structured content (titles, sections, bullet points)
+- **Speech-to-Text:** OpenAI Whisper
+- **LaTeX Builder:** Backend service to convert content structure → LaTeX syntax
+- **LaTeX Compilation:** Backend LaTeX Compiler (TexLive/MiKTeX)
+- **PDF Generation:** Complete pipeline: Content → LaTeX → PDF
+
+### DevOps
+
+- **Containerization:** Docker + Docker Compose
+- **CI/CD:** GitHub Actions
+- **Monitoring:** (To be configured)
+
+---
+
+## Database Schema
+
+### Core Tables
+
+**Users**
+
+```sql
+id, email, name, avatarUrl, passwordHash
+role (FREE/VIP/ADMIN), slidesGenerated, maxSlidesPerMonth
+subscriptionExpiresAt, createdAt, updatedAt
+```
+
+**Conversations**
+
+```sql
+id, userId, title, createdAt, updatedAt
+```
+
+**Messages**
+
+```sql
+id, conversationId, role (USER/ASSISTANT), messageType (TEXT/AUDIO/IMAGE)
+contentText, audioUrl, imageUrl, transcript, styleAnalysis (JSONB)
+pdfUrl, slideCount, createdAt
+```
+
+**Sessions**
+
+```sql
+id, userId, refreshToken, expiresAt
+```
+
+**UsageLogs**
+
+```sql
+id, userId, actionType, status, metadata (JSONB), createdAt
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+ and npm
+- Docker & Docker Compose
+- PostgreSQL 14+
+- MinIO server (or S3-compatible storage)
+
+### Environment Setup
+
+1. **Clone the repository**
+
+```bash
+git clone git@github.com:The-GenLab/Lectgen-AI.git
+cd Lectgen-AI
+```
+
+2. **Configure environment variables**
+
+```bash
+cp .env.example .env
+# Edit .env with your API keys and configuration
+```
+
+3. **Install dependencies**
+
+```bash
+# Root dependencies
+npm install
+
+# Backend dependencies
+cd backend && npm install
+
+# Frontend dependencies
+cd ../frontend && npm install
+```
+
+4. **Start development environment**
+
+```bash
+# Using Docker Compose
+docker-compose -f docker-compose.dev.yml up
+
+# Or manually
+npm run dev
+```
+
+5. **Access the application**
+
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:8000`
+- MinIO Console: `http://localhost:9001`
+
+### Project Structure
 
 ```
-Audio → Speech Service (Whisper) → Text → Chat API → AI Service → LaTeX
+Lectgen-AI/
+├── backend/              # Node.js backend service
+├── frontend/             # React frontend application
+├── scripts/              # Utility scripts
+├── AI_doc/              # AI service documentation
+├── docker-compose.dev.yml
+├── Dockerfile.backend.dev
+└── README.md
 ```
 
-**3. User tạo slide (Image Input)**
+---
+
+## API Documentation
+
+### Authentication Endpoints
+
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `POST /api/auth/refresh` - Refresh access token
+- `POST /api/auth/logout` - User logout
+
+### Chat Endpoints
+
+- `POST /api/chat/message` - Send text message
+- `POST /api/chat/audio` - Upload audio for transcription
+- `POST /api/chat/template` - Upload template image
+- `GET /api/chat/conversations` - List user conversations
+- `GET /api/chat/conversations/:id` - Get conversation details
+
+### User Endpoints
+
+- `GET /api/user/profile` - Get user profile
+- `PUT /api/user/profile` - Update profile
+- `POST /api/user/upgrade` - Upgrade to VIP
+
+### Admin Endpoints
+
+- `GET /api/admin/stats` - System statistics
+- `GET /api/admin/users` - User management
+- `GET /api/admin/logs` - Usage logs
+
+---
+
+## Feature Tiers
+
+### FREE Plan
+
+- ✅ 5 presentations per month
+- ✅ Text input only
+- ✅ Basic templates
+- ✅ Standard processing speed
+
+### VIP Plan
+
+- ✅ Unlimited presentations
+- ✅ Text + Audio + Template inputs
+- ✅ Premium templates with icons & charts
+- ✅ Priority queue processing
+- ✅ Advanced AI model (Gemini 2.0)
+
+---
+
+## Storage Structure (MinIO)
 
 ```
-Image → Template Analysis → Style Prompt → Chat API → AI Service → LaTeX
+buckets/
+├── audio-recordings/    # User audio uploads
+├── template-images/     # Reference slide images
+├── avatars/            # User profile pictures
+└── latex-files/        # Generated LaTeX documents
 ```
 
-**4. Authentication Flow**
+---
 
-```
-Login → JWT Access Token (15m) + Refresh Token (7d) → HTTP-only cookies
-Refresh → New Access Token (nếu Refresh Token còn hợp lệ)
-```
+## Contributing
 
-### Storage Buckets (MinIO)
+This is a private project developed by The GenLab team. For internal contributors:
 
-- `audio-recordings/` - Audio files từ user
-- `template-images/` - Template images uploaded
-- `avatars/` - User profile avatars
-- `latex-files/` - Generated LaTeX files
+1. Create a feature branch from `develop`
+2. Make your changes following the coding standards
+3. Submit a pull request with detailed description
+4. Ensure all tests pass before requesting review
 
+---
 
+## License
 
+This project is proprietary software. All rights reserved.
+
+---
+
+## Team
+
+Developed by **The GenLab** team
+
+- **Project Duration:** 2 months
+- **Team Size:** 5 developers
+
+---
+
+## Support
+
+For issues and questions, please contact the development team or create an issue in the repository.
+
+---
+
+<div align="center">
+
+**Built with ❤️ by The GenLab**
+
+</div>
