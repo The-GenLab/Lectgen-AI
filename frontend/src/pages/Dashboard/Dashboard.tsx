@@ -249,7 +249,7 @@ export default function Dashboard() {
       setConversationTitle(conv.title);
     } catch (error) {
       console.error("Failed to load messages:", error);
-      antdMessage.error("Không thể tải tin nhắn");
+      antdMessage.error("Cannot load messages");
     } finally {
       setIsLoading(false);
     }
@@ -312,11 +312,11 @@ export default function Dashboard() {
         response.data.assistantMessage,
       ]);
 
-      antdMessage.success("Đã tạo bài thuyết trình LaTeX!");
+      antdMessage.success("LaTeX presentation created!");
     } catch (error: any) {
       console.error("Error sending message:", error);
       antdMessage.error(
-        error.response?.data?.message || "Không thể tạo bài thuyết trình",
+        error.response?.data?.message || "Cannot create presentation",
       );
       // Restore input if failed
       setInput(userPrompt);
@@ -336,7 +336,7 @@ export default function Dashboard() {
     analysisResult: any,
   ) => {
     if (!templateImage || !topic.trim()) {
-      antdMessage.warning("Vui lòng upload ảnh template và nhập chủ đề!");
+      antdMessage.warning("Please upload template image and enter topic!");
       return;
     }
 
@@ -387,9 +387,9 @@ export default function Dashboard() {
         response.data.assistantMessage,
       ]);
 
-      antdMessage.success("Đã tạo bài thuyết trình LaTeX theo mẫu!");
+      antdMessage.success("LaTeX presentation created from template!");
 
-      // Switch về text tab
+      // Switch to text tab
       setActiveTab("text");
     } catch (error: any) {
       console.error("Error generating from template:", error);
@@ -398,7 +398,7 @@ export default function Dashboard() {
       const errorMsg =
         error.response?.data?.message ||
         error.message ||
-        "Không thể tạo bài thuyết trình từ template";
+        "Cannot create presentation from template";
 
       antdMessage.error(errorMsg);
     } finally {
@@ -595,7 +595,7 @@ export default function Dashboard() {
               onClick={handleLogout}
               className={styles.logoutBtn}
             >
-              Đăng xuất
+              Logout
             </Button>
           </div>
         </div>
@@ -644,7 +644,7 @@ export default function Dashboard() {
                       <div>
                         <div className={styles.aiTextBubble}>
                           <Text>
-                            Đã tạo bài thuyết trình LaTeX ({msg.slideCount || 0}{" "}
+                            Created LaTeX presentation ({msg.slideCount || 0}{" "}
                             slides)
                           </Text>
                         </div>
@@ -720,7 +720,7 @@ export default function Dashboard() {
                                     a.download = `presentation-${msg.id}.tex`;
                                     a.click();
                                     URL.revokeObjectURL(url);
-                                    antdMessage.success("Đã tải xuống!");
+                                    antdMessage.success("Downloaded!");
                                   }}
                                 >
                                   Download LaTeX
@@ -733,7 +733,7 @@ export default function Dashboard() {
                                     navigator.clipboard.writeText(
                                       msg.contentText || "",
                                     );
-                                    antdMessage.success("Đã copy LaTeX code!");
+                                    antdMessage.success("LaTeX code copied!");
                                   }}
                                 >
                                   Copy Code
@@ -836,7 +836,10 @@ export default function Dashboard() {
                               />
                             </div>
 
-                            <Text type="secondary" className={styles.disclaimer}>
+                            <Text
+                              type="secondary"
+                              className={styles.disclaimer}
+                            >
                               AI can make mistakes. Please review generated
                               slides before presenting.
                             </Text>
@@ -902,7 +905,7 @@ export default function Dashboard() {
 
           {/* Input Area - Show at bottom when no messages OR loading */}
           {(messages.length === 0 || isLoading) && (
-            <div style={{ display: 'none' }}>
+            <div style={{ display: "none" }}>
               {/* Hidden - input is shown in center */}
             </div>
           )}
@@ -981,7 +984,9 @@ export default function Dashboard() {
                       </span>
                     ),
                     children: (
-                      <AudioRecorder onTranscriptReady={handleTranscriptReady} />
+                      <AudioRecorder
+                        onTranscriptReady={handleTranscriptReady}
+                      />
                     ),
                   });
                 }
@@ -1023,4 +1028,3 @@ export default function Dashboard() {
     </Layout>
   );
 }
-

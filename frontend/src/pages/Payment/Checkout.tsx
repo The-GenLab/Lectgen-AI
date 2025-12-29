@@ -118,10 +118,10 @@ const Checkout: React.FC = () => {
   };
 
   // Generate QR code data for Momo payment
-  // Bạn có thể thay đổi định dạng này theo yêu cầu của Momo API hoặc mã QR thực tế của bạn
-  // Ví dụ: có thể là URL thanh toán Momo, hoặc chuỗi dữ liệu theo format của Momo
+  // You can change this format according to Momo API requirements or actual QR code
+  // Example: could be Momo payment URL, or data string in Momo format
   const generateQRData = () => {
-    // Option 1: Sử dụng format hiện tại (custom format)
+    // Option 1: Use current format (custom format)
     // return `LectGen-AI|VIP|${billingPeriod}|${total}|${Date.now()}`;
     
     // Option 2: Sử dụng Momo payment URL (ví dụ - thay bằng URL thực tế)
@@ -268,11 +268,11 @@ const Checkout: React.FC = () => {
                       </div>
                       <div className="text-center">
                         <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                          Đang xử lý thanh toán...
+                          Processing payment...
                         </p>
                         {countdown > 0 && (
                           <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                            Vui lòng đợi {countdown} giây
+                            Please wait {countdown} seconds
                           </p>
                         )}
                       </div>

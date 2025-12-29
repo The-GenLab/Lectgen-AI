@@ -70,10 +70,10 @@ export default function AudioRecorder({ onTranscriptReady }: AudioRecorderProps)
         setRecordingTime(prev => prev + 1);
       }, 1000);
 
-      message.success('Đang ghi âm...');
+      message.success('Recording...');
     } catch (error) {
       console.error('Error accessing microphone:', error);
-      message.error('Không thể truy cập microphone. Vui lòng cho phép quyền truy cập.');
+      message.error('Cannot access microphone. Please allow microphone permission.');
     }
   };
 
@@ -91,7 +91,7 @@ export default function AudioRecorder({ onTranscriptReady }: AudioRecorderProps)
 
   const transcribeAudio = async () => {
     if (!audioBlob) {
-      message.error('Không có file âm thanh để xử lý');
+      message.error('No audio file to process');
       return;
     }
 
@@ -117,10 +117,10 @@ export default function AudioRecorder({ onTranscriptReady }: AudioRecorderProps)
       const transcriptText = data.data.transcript;
       setTranscript(transcriptText);
       onTranscriptReady(transcriptText);
-      message.success('Chuyển đổi thành công!');
+      message.success('Transcription successful!');
     } catch (error: any) {
       console.error('Transcription error:', error);
-      message.error(error.message || 'Không thể chuyển đổi âm thanh sang văn bản');
+      message.error(error.message || 'Cannot transcribe audio to text');
     } finally {
       setIsProcessing(false);
     }
@@ -154,14 +154,14 @@ export default function AudioRecorder({ onTranscriptReady }: AudioRecorderProps)
         {audioBlob && !isRecording && (
           <div className={styles.audioReady}>
             <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 20 }} />
-            <Text>Đã ghi âm {formatTime(recordingTime)}</Text>
+            <Text>Recorded {formatTime(recordingTime)}</Text>
           </div>
         )}
 
         {!isRecording && !audioBlob && (
           <div className={styles.idleState}>
             <AudioOutlined style={{ fontSize: 48, color: '#d9d9d9' }} />
-            <Text type="secondary">Nhấn nút mic để bắt đầu ghi âm</Text>
+            <Text type="secondary">Press mic button to start recording</Text>
           </div>
         )}
       </div>

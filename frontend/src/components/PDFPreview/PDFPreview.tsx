@@ -25,7 +25,7 @@ export default function PDFPreview({
     
     try {
       const response = await fetch(pdfUrl);
-      if (!response.ok) throw new Error('Không thể tải file PDF');
+      if (!response.ok) throw new Error('Cannot load PDF file');
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -39,7 +39,7 @@ export default function PDFPreview({
       
       if (onDownload) onDownload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Lỗi khi tải file');
+      setError(err instanceof Error ? err.message : 'Error loading file');
       console.error('Download error:', err);
     } finally {
       setIsLoading(false);
