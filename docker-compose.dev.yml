@@ -149,6 +149,34 @@ services:
           target: /app/src
         - path: ./backend/package.json
           action: rebuild
+  # Frontend 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../Dockerfile.frontend.dev
+    container_name: lectgen-frontend
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:5000/api}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - lectgen-network
+    depends_on:
+      - backend
+    develop:
+      watch:
+        - path: ./frontend/src
+          action: sync
+          target: /app/src
+        - path: ./frontend/package.json
+          action: rebuild
 
 volumes:
   postgres_data:
