@@ -172,9 +172,6 @@ services:
       - backend
     develop:
       watch:
-        - path: ./frontend/src
-          action: sync
-          target: /app/src
         - path: ./frontend/package.json
           action: rebuild
 
