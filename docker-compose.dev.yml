@@ -6,11 +6,11 @@ services:
     image: postgres:16-alpine
     container_name: lectgen-postgres
     environment:
-      POSTGRES_USER: lectgen
-      POSTGRES_PASSWORD: lectgen123
-      POSTGRES_DB: lectgen_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -26,11 +26,11 @@ services:
     image: minio/minio:latest
     container_name: lectgen-minio
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin123
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - minio_data:/data
     networks:
@@ -46,8 +46,9 @@ services:
   redis:
     image: redis:7-alpine
     container_name: lectgen-redis
+    command: sh -c "if [ -n \"$REDIS_PASSWORD\" ]; then redis-server --requirepass $REDIS_PASSWORD; else redis-server; fi"
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -63,11 +64,11 @@ services:
     image: dpage/pgadmin4:latest
     container_name: lectgen-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@lectgen.ai
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
       PGADMIN_CONFIG_SERVER_MODE: "False"
     ports:
-      - "5050:80"
+      - "${PGADMIN_PORT:-5050}:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
@@ -114,15 +115,16 @@ services:
       - ./.env
     environment:
       NODE_ENV: development
-      PORT: 5000
-      DATABASE_URL: postgresql://lectgen:lectgen123@postgres:5432/lectgen_db
+      PORT: ${PORT:-5000}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT:-5432}/${POSTGRES_DB}
       MINIO_ENDPOINT: minio
-      MINIO_PORT: 9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin123
-      REDIS_URL: redis://redis:6379
-      STT_PROVIDER: local
-      WHISPER_BASE_URL: http://whisper:8080
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:${REDIS_PORT:-6379}
+      STT_PROVIDER: ${STT_PROVIDER:-local}
+      WHISPER_BASE_URL: ${WHISPER_BASE_URL:-http://whisper:8080}
     ports:
       - "5000:5000"
       - "9229:9229"
